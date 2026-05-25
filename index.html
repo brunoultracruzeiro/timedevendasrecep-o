@@ -429,7 +429,8 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <div class="number-display">
         <div class="number-label">Número para ligar</div>
         <div id="current-lead-name-big" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green);margin-bottom:4px;min-height:22px"></div>
-        <div class="number-value" id="current-number">—</div>
+        <div class="number-value" id="current-number" onclick="abrirPhoneLink()" title="Clique para ligar via Phone Link (Vincular ao Celular)" style="cursor:pointer;transition:opacity .2s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">—</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px">📱 Clique no número para ligar</div>
         <div class="number-name" id="current-lead-name"></div>
         <div class="number-tags" id="current-lead-tags"></div>
 
@@ -866,6 +867,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
             <option value="ausentes">🚶 Ausentes</option>
             <option value="treinosvencidos">⏰ Treinos Vencidos</option>
             <option value="prospectos">🔥 Prospectos</option>
+            <option value="diaria">💰 Pagaram Diária</option>
           </select>
         </div>
         <div>
@@ -911,6 +913,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
           <option value="ausentes">🚶 Ausentes</option>
           <option value="treinosvencidos">⏰ Treinos Vencidos</option>
           <option value="prospectos">🔥 Prospectos</option>
+            <option value="diaria">💰 Pagaram Diária</option>
         </select>
         <select class="filter-select" id="listas-filtro-unidade" onchange="renderListasSalvas()" style="font-size:11px;min-width:140px">
           <option value="">Todas as unidades</option>
@@ -1032,6 +1035,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
             <option value="ausentes">🚶 Ausentes</option>
             <option value="treinosvencidos">⏰ Treinos Vencidos</option>
             <option value="prospectos">🔥 Prospectos</option>
+            <option value="diaria">💰 Pagaram Diária</option>
           </select>
         </div>
         <div>
@@ -1082,6 +1086,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
             <option value="ausentes">🚶 Ausentes</option>
             <option value="treinosvencidos">⏰ Treinos Vencidos</option>
             <option value="prospectos">🔥 Prospectos</option>
+            <option value="diaria">💰 Pagaram Diária</option>
           </select>
         </div>
       </div>
@@ -1340,6 +1345,21 @@ function copiarNumero() {
     document.body.removeChild(el);
     showToast('Número copiado!');
   });
+}
+
+function abrirPhoneLink() {
+  const numEl = document.getElementById('current-number');
+  if (!numEl) return;
+  const raw = numEl.textContent.replace(/\D/g,'');
+  if (!raw) return;
+  // Abre via protocolo tel: — o Windows Phone Link (Vincular ao Celular) intercepta
+  const a = document.createElement('a');
+  a.href = `tel:${raw}`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 500);
+  showToast('📱 Abrindo Phone Link...');
 }
 
 function openWA(e) {
@@ -2553,7 +2573,19 @@ function renderTeamGrid() {
     const ini=m.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const myL=leads.filter(l=>l.assignedTo===m.id).length;
     const myLig=lig.filter(l=>l.agente===m.name).length;
-    return `<div class="team-card"><div class="tc-avatar">${ini}</div><div><div class="tc-name">${m.name}</div><div class="tc-count">${m.unidade||'—'} · ${myL} leads · ${myLig} lig.</div></div></div>`;
+    return `<div class="team-card" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;width:100%">
+        <div class="tc-avatar">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div class="tc-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</div>
+          <div class="tc-count">${m.unidade||'—'} · ${myL} leads · ${myLig} lig.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;width:100%">
+        <button onclick="editarMembro(${m.id})" style="flex:1;padding:5px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='var(--muted)'">✏️ Editar</button>
+        <button onclick="excluirMembro(${m.id},'${m.name.replace(/'/g,"\\'")}')" style="flex:1;padding:5px;border-radius:5px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07);color:var(--red);font-size:11px;cursor:pointer;transition:all .2s">🗑 Excluir</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -2607,7 +2639,7 @@ const setListaAtiva = id => S.set('ac_lista_ativa', id);
 const TIPO_LABELS = {
   inadimplentes:'🚨 Inadimplentes', visitantes:'👥 Visitantes',
   boasvindas:'🎉 Boas-Vindas', aniversariantes:'🎂 Aniversariantes',
-  ausentes:'🚶 Ausentes', treinosvencidos:'⏰ Treinos Vencidos', prospectos:'🔥 Prospectos'
+  ausentes:'🚶 Ausentes', treinosvencidos:'⏰ Treinos Vencidos', prospectos:'🔥 Prospectos', diaria:'💰 Pagaram Diária'
 };
 
 function handleFileUpload(e) {
@@ -3150,6 +3182,37 @@ function clearAllData() {
   ['ac_ligacoes','ac_leads'].forEach(k=>S.rm(k));
   renderAdmin();
   showToast('Dados apagados');
+}
+
+function editarMembro(id) {
+  id = Number(id);
+  const team = getTeam();
+  const m = team.find(t => t.id === id);
+  if (!m) return;
+  const novoNome = prompt('Editar nome do atendente:', m.name);
+  if (novoNome === null) return;
+  if (!novoNome.trim()) { showToast('Nome não pode ser vazio', 'red'); return; }
+  const novaUnidade = prompt('Unidade:', m.unidade || '');
+  if (novaUnidade === null) return;
+  const idx = team.findIndex(t => t.id === id);
+  team[idx].name = novoNome.trim();
+  team[idx].unidade = novaUnidade.trim();
+  saveTeam(team);
+  renderTeamGrid();
+  renderLoginList();
+  populateConsultorFilters();
+  showToast(`✅ ${novoNome.trim()} atualizado!`);
+}
+
+function excluirMembro(id, nome) {
+  id = Number(id);
+  if (!confirm(`Excluir "${nome}" da equipe?\n\nOs leads e ligações associados serão mantidos, mas o atendente não aparecerá mais no login.`)) return;
+  const team = getTeam().filter(t => t.id !== id);
+  saveTeam(team);
+  renderTeamGrid();
+  renderLoginList();
+  populateConsultorFilters();
+  showToast(`🗑 ${nome} removido da equipe`);
 }
 
 function showToast(msg, type='green') {
