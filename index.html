@@ -3707,13 +3707,7 @@ const WA_TEMPLATES = {
 
 // ══════════════════════════════════════════════════════════════════
 
-let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([
-
-  {id:'rec1', name:'Ana Lima',  role:'recepcao', pin:'1234', color:'#3b82f6', avatar:'A'},
-
-  {id:'rec2', name:'Carla',     role:'recepcao', pin:'1234', color:'#8b5cf6', avatar:'C'},
-
-])));
+let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([])));
 
 function saveTeamMembers(){ LS.set('teamMembers', JSON.stringify(teamMembers)); }
 
@@ -4036,6 +4030,15 @@ function saveNewMember(){
 
   saveTeamMembers();
 
+  // Sincronizar com ac_team
+  const acTeam = getTeam();
+  if (!acTeam.some(t => t.name === name)) {
+    acTeam.push({id: Date.now(), name, unidade: ''});
+    saveTeam(acTeam);
+  }
+
+  if(typeof renderLoginList === 'function') renderLoginList();
+
   document.getElementById('addMemberPanelInline').style.display='none';
 
   renderTeamManagement();
@@ -4054,7 +4057,14 @@ function removeMember(id){
 
   teamMembers = teamMembers.filter(x=>x.id!==id);
 
-  saveTeamMembers(); renderTeamManagement(); toast(m.name+' removida','warn');
+  saveTeamMembers();
+
+  // Sincronizar remoção com ac_team
+  saveTeam(getTeam().filter(t => t.name !== m.name));
+
+  if(typeof renderLoginList === 'function') renderLoginList();
+
+  renderTeamManagement(); toast(m.name+' removida','warn');
 
 }
 
@@ -6212,15 +6222,17 @@ function selectTurno(t) {
 
 function renderLoginList() {
 
-  const team = getTeam();
-
   const list = document.getElementById('login-list');
 
   if (!list) return;
 
-  if (!team.length) {
+  // Fonte única: teamMembers (addTeamMember sincroniza ac_team → teamMembers)
+  const members = (typeof teamMembers !== 'undefined' ? teamMembers : [])
+    .filter(m => m.role === 'recepcao' || !m.role);
 
-    list.innerHTML = '<p style="color:var(--muted);font-size:12px;text-align:center">Nenhum atendente cadastrado. Peça para a liderança adicionar.</p>';
+  if (!members.length) {
+
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Nenhum atendente cadastrado.<br><span style="font-size:11px;opacity:.6">Peça para o Admin adicionar membros.</span></p>';
 
     return;
 
@@ -6228,42 +6240,62 @@ function renderLoginList() {
 
   // Agrupar por unidade
   const grupos = {};
-  team.forEach(m => {
-    const u = m.unidade || 'Geral';
+
+  members.forEach(m => {
+
+    const u = m.unidade || 'Recepção';
+
     if (!grupos[u]) grupos[u] = [];
+
     grupos[u].push(m);
+
   });
 
   const unidades = Object.keys(grupos);
+
   const temMulti = unidades.length > 1;
 
   list.innerHTML = unidades.map(u => {
+
     const membros = grupos[u].map(m => {
-      const ini = m.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-      const pending = getLeads().filter(l => Number(l.assignedTo) === Number(m.id)).length;
-      return `<button class="login-btn" data-id="${m.id}" data-name="${m.name.replace(/"/g,'&quot;')}" data-unidade="${(m.unidade||'').replace(/"/g,'&quot;')}" onclick="loginAs(this)">
-        <div class="lb-avatar">${ini}</div>
-        <div class="lb-name">${m.name}<span class="lb-role">${m.unidade||''} · ${pending} leads</span></div>
+
+      const ini = (m.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+      return `<button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color||'#3b82f6'}33">
+
+        <div style="width:36px;height:36px;border-radius:50%;background:${m.color||'#3b82f6'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar||ini}</div>
+
+        <div style="flex:1;text-align:left">
+
+          <div style="font-size:14px;font-weight:700">${m.name}</div>
+
+          <div style="font-size:10px;color:var(--txt3,#64748b);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
+
+        </div>
+
+        <span style="color:var(--txt3,#64748b)">›</span>
+
       </button>`;
+
     }).join('');
 
     return temMulti
+
       ? `<div style="margin-bottom:12px">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,var(--muted));text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
+
+          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,#64748b);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
+
           ${membros}
+
         </div>`
+
       : membros;
+
   }).join('');
 
 }
 
-function loginAs(btn) {
 
-  const id      = Number(btn.dataset.id);
-  const name    = btn.dataset.name;
-  const unidade = btn.dataset.unidade;
-
-  currentUser = {id, name, unidade: unidade||''};
 
   isAdmin = false;
 
@@ -11553,19 +11585,7 @@ const _origAtendeu = window.atendeu;
 
 window.onload = () => {
 
-  if (!getTeam().length) {
-
-    saveTeam([
-
-      {id:1,name:'Ana Lima',unidade:'Ultra Cruzeiro'},
-
-      {id:2,name:'Bruno Silva',unidade:'Ultra Cruzeiro'},
-
-      {id:3,name:'Carla Mendes',unidade:'Ultra Cruzeiro'}
-
-    ]);
-
-  }
+  // Não inserir defaults — mostrar apenas membros cadastrados pelo admin
 
   renderLoginList();
 
