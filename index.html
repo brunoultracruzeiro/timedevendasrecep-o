@@ -104,7 +104,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* DIALER */
 
-.dialer-wrap{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:640px;margin:0 auto;width:100%}
+.dialer-wrap{flex:1;overflow-y:auto;padding:16px 20px 8px;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:780px;margin:0 auto;width:100%}
 
 .prog-bar{width:100%;display:flex;align-items:center;gap:10px}
 
@@ -704,7 +704,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* NEW DIALER STYLES */
 
-.dial-wrap{max-width:500px;margin:0 auto;padding:36px 20px 70px}
+.dial-wrap{max-width:780px;margin:0 auto;padding:24px 24px 60px}
 
 .dial-step-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.25);border-radius:100px;font-family:var(--mono);font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 
@@ -860,7 +860,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 /* DISCAGEM */
 
-.dial-wrap{max-width:500px;margin:0 auto;padding:36px 20px 70px}
+.dial-wrap{max-width:780px;margin:0 auto;padding:24px 24px 60px}
 
 .dial-step-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:rgba(22,199,132,.1);border:1px solid rgba(22,199,132,.25);border-radius:100px;font-family:'DM Mono',monospace;font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 
@@ -1586,7 +1586,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
     <div class="login-title">Digite seu PIN</div>
 
-    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="••••" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
+    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="PIN (padrão: 1234)" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
 
     <div class="login-error" id="loginError">PIN incorreto. Tente novamente.</div>
 
@@ -1980,22 +1980,69 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
       </div>
 
-      <div class="atendeu-card" style="margin-top:20px">
-
-        <div class="atendeu-q">ATENDEU?</div>
-
-        <div class="atendeu-opts">
-
-          <button class="atendeu-btn sim" onclick="atendeu(true)">✅ SIM</button>
-
-          <button class="atendeu-btn nao" onclick="atendeu(false)">❌ NÃO</button>
-
+      <!-- ATENDEU + FLUXO SIMPLIFICADO -->
+      <div id="card-atendeu" style="margin-top:20px">
+        <div class="atendeu-card">
+          <div class="atendeu-q">ATENDEU?</div>
+          <div class="atendeu-opts">
+            <button class="atendeu-btn sim" onclick="atendeu(true)">✅ SIM</button>
+            <button class="atendeu-btn nao" onclick="atendeuNao()">❌ NÃO</button>
+          </div>
         </div>
-
       </div>
 
-    </div>
+      <!-- FLUXO SIM: script + resultado + agendamento -->
+      <div id="card-sim-flow" style="display:none;margin-top:12px">
+        <!-- Script gerado -->
+        <div style="background:#091410;border:1px solid rgba(22,199,132,.22);border-left:3px solid var(--green);border-radius:10px;padding:20px;margin-bottom:14px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:12px">🎙 SCRIPT — FALE ISSO</div>
+          <div id="sim-script-text" style="font-size:16px;line-height:2;color:#c8e6d0;font-style:italic"></div>
+        </div>
+        <!-- Resultado -->
+        <div style="margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">O que aconteceu?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="atendeu-btn sim" style="font-size:13px;padding:12px" onclick="selecionarResultado('agendou')">📅 Agendou</button>
+            <button class="atendeu-btn nao" style="font-size:13px;padding:12px;color:var(--amber);border-color:var(--amber)" onclick="selecionarResultado('nao_agendou')">🔄 Não agendou</button>
+            <button class="atendeu-btn" style="font-size:13px;padding:12px;color:var(--blue);border-color:var(--blue)" onclick="selecionarResultado('prometeu')">⏳ Prometeu</button>
+            <button class="atendeu-btn nao" style="font-size:13px;padding:12px" onclick="selecionarResultado('cancelou')">🚫 Cancelou</button>
+          </div>
+        </div>
+        <!-- Agendamento (aparece se agendou) -->
+        <div id="agend-inline-box" style="display:none;background:rgba(22,199,132,.07);border:1px solid rgba(22,199,132,.25);border-radius:9px;padding:14px;margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📅 Registrar Agendamento</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:120px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Data</div>
+              <input type="date" id="agend-inline-data" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none">
+            </div>
+            <div style="flex:1;min-width:100px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Horário</div>
+              <input type="time" id="agend-inline-hora" value="09:00" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none">
+            </div>
+          </div>
+          <input type="text" id="agend-inline-obs" placeholder="Observação do agendamento..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px">
+        </div>
+        <!-- Obs geral -->
+        <textarea id="obs-sim-geral" placeholder="Observação da ligação..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--text);font-size:13px;outline:none;resize:vertical;min-height:60px;margin-bottom:10px"></textarea>
+        <button class="btn btn-primary" style="width:100%" onclick="finalizarSim()">✅ Finalizar e Próximo →</button>
+      </div>
 
+      <!-- FLUXO NÃO: obs + próximo -->
+      <div id="card-nao-flow" style="display:none;margin-top:12px">
+        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:9px;padding:14px;margin-bottom:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📵 Não atendeu</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+            <button class="option-btn" id="motivo-nao-atendeu-btn" onclick="setMotivoNaoAtendeu('nao_atendeu')">📵 Não atendeu</button>
+            <button class="option-btn" id="motivo-caixa-btn" onclick="setMotivoNaoAtendeu('caixa_postal')">📬 Caixa postal</button>
+            <button class="option-btn" id="motivo-ocupado-btn" onclick="setMotivoNaoAtendeu('ocupado')">⏳ Ocupado</button>
+            <button class="option-btn" id="motivo-errado-btn" onclick="setMotivoNaoAtendeu('numero_errado')">❌ Número errado</button>
+          </div>
+          <textarea id="obs-nao-atendeu" placeholder="Observação (opcional)..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;resize:vertical;min-height:52px;margin-bottom:8px"></textarea>
+          <button class="btn btn-primary" style="width:100%;background:var(--red)" onclick="finalizarNaoAtendeu()">→ Próximo número</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TELA SCRIPT -->
@@ -2524,7 +2571,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
     <div class="admin-actions">
 
-      <button class="btn-gestor" onclick="exportCSV()">⬇️ Exportar CSV</button>
+      <button class="btn-gestor" onclick="exportCSV()">📊 Exportar Excel por Pessoa</button>
 
       <button class="btn-gestor danger" onclick="clearAllData()">🗑 Limpar</button>
 
@@ -2808,19 +2855,21 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
         </div>
 
+        <div>
+
+          <div class="filter-label" style="margin-bottom:5px">Distribuir para</div>
+
+          <select class="filter-select" id="upload-membro" style="width:100%">
+
+            <option value="">Todos os atendentes (automático)</option>
+
+          </select>
+
+        </div>
+
       </div>
 
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
-
-        ondragover="event.preventDefault();this.classList.add('drag')"
-
-        ondragleave="this.classList.remove('drag')"
-
-        ondrop="handleDrop(event)">
-
-        <div class="upload-icon">📂</div>
-
-        <div class="upload-hint">Arraste o arquivo aqui ou <strong>clique para selecionar</strong><br><span style="font-size:11px;display:block;margin-top:3px;color:var(--muted)">Suporta .csv · .xls · .xlsx · .txt</span></div>
 
       </div>
 
@@ -3658,13 +3707,7 @@ const WA_TEMPLATES = {
 
 // ══════════════════════════════════════════════════════════════════
 
-let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([
-
-  {id:'rec1', name:'Ana Lima',  role:'recepcao', pin:'1234', color:'#3b82f6', avatar:'A'},
-
-  {id:'rec2', name:'Carla',     role:'recepcao', pin:'1234', color:'#8b5cf6', avatar:'C'},
-
-])));
+let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([])));
 
 function saveTeamMembers(){ LS.set('teamMembers', JSON.stringify(teamMembers)); }
 
@@ -3705,58 +3748,61 @@ function loginChooseRole(role){
   if(role === 'admin'){
 
     showLoginStep(3);
-
     document.getElementById('loginPersonName').textContent = 'Admin';
-
     document.getElementById('loginPersonRole').textContent = 'Acesso completo';
-
     document.getElementById('loginPersonAvatar').textContent = '⚙';
-
     document.getElementById('loginPersonAvatar').style.background = 'var(--yellow)';
-
     loginSelectedMember = null;
 
   } else {
 
-    // Unificar teamMembers (cadastro via painel antigo) + ac_team (cadastro via Config)
-    const fromOld = teamMembers.filter(m => m.role === role);
-    const acTeam  = (getTeam()||[]);
-    const colors  = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
-    const fromNew = acTeam
-      .filter(t => !fromOld.some(o => String(o.id) === String(t.id) || o.name === t.name))
-      .map((t,i) => ({
-        id: String(t.id), name: t.name, role: 'recepcao',
-        pin: '1234', color: colors[(fromOld.length+i) % colors.length],
-        avatar: t.name[0].toUpperCase(), unidade: t.unidade||''
-      }));
-    // Garantir que os novos estejam no teamMembers para loginSelectMember funcionar
-    fromNew.forEach(m => { if(!teamMembers.find(x=>x.id===m.id)){teamMembers.push(m);} });
-    if(fromNew.length) saveTeamMembers();
+    const colors = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
 
-    const members = [...fromOld, ...fromNew];
+    // Ler direto do storage unificado
+    const allRaw = getTeam();
+
+    // Converter para formato de login (suporta ambos os formatos antigo e novo)
+    const members = allRaw.map((m, i) => ({
+      id:      String(m.id || i),
+      name:    m.name || '?',
+      role:    m.role || 'recepcao',
+      pin:     m.pin  || '1234',
+      color:   m.color || colors[i % colors.length],
+      avatar:  m.avatar || (m.name||'?')[0].toUpperCase(),
+      unidade: m.unidade || ''
+    })).filter(m => m.role === 'recepcao' || !m.role || m.role === role);
+
+    // Garantir que estejam em teamMembers para loginSelectMember
+    members.forEach(m => {
+      if(!teamMembers.find(x => String(x.id) === String(m.id))){
+        teamMembers.push(m);
+      }
+    });
+    // Também sincronizar teamMembers com qualquer membro novo
+    teamMembers.forEach(m => {
+      if(!allRaw.find(x => String(x.id) === String(m.id) || x.name === m.name)){
+        allRaw.push(m);
+      }
+    });
+    saveTeam(allRaw);
+    teamMembers = JSON.parse(localStorage.getItem('acad_teamMembers') || '[]');
 
     document.getElementById('loginStep2Title').textContent = 'Selecione seu nome — Recepção';
 
     const list = document.getElementById('loginMemberList');
 
     if(!members.length){
-
-      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Nenhum membro cadastrado.<br><span style="font-size:11px;font-family:var(--mono)">Peça ao Admin para cadastrar.</span></div>';
-
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:14px">Nenhum membro cadastrado.<br><small style="opacity:.6">Acesse Admin → ⚙ Config → Equipe para adicionar.</small></div>';
     } else {
-
       list.innerHTML = members.map(m => `
-
         <button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color}33">
-
-          <div style="width:36px;height:36px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
-
-          <div style="flex:1;text-align:left"><div style="font-size:14px;font-weight:700">${m.name}</div><div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div></div>
-
+          <div style="width:38px;height:38px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
+          <div style="flex:1;text-align:left">
+            <div style="font-size:15px;font-weight:700">${m.name}</div>
+            <div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
+          </div>
           <span style="color:var(--txt3)">›</span>
-
         </button>`).join('');
-
     }
 
     showLoginStep(2);
@@ -3767,19 +3813,20 @@ function loginChooseRole(role){
 
 function loginSelectMember(memberId){
 
-  const m = teamMembers.find(x => x.id === memberId);
+  // Buscar por id como string OU número para evitar mismatch
+  const m = teamMembers.find(x => String(x.id) === String(memberId));
 
-  if(!m) return;
+  if(!m){ console.warn('Membro não encontrado:', memberId); return; }
 
-  loginSelectedMember = m; loginSelectedRole = m.role;
+  loginSelectedMember = m; loginSelectedRole = m.role || 'recepcao';
 
   document.getElementById('loginPersonName').textContent = m.name;
 
-  document.getElementById('loginPersonRole').textContent = 'Recepção';
+  document.getElementById('loginPersonRole').textContent = m.unidade || 'Recepção';
 
-  document.getElementById('loginPersonAvatar').textContent = m.avatar;
+  document.getElementById('loginPersonAvatar').textContent = m.avatar || m.name[0];
 
-  document.getElementById('loginPersonAvatar').style.background = m.color;
+  document.getElementById('loginPersonAvatar').style.background = m.color || '#3b82f6';
 
   showLoginStep(3);
 
@@ -3805,7 +3852,7 @@ function loginConfirm(){
 
     correctPin = (loginSelectedMember.pin || '1234').trim();
 
-    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role;
+    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role || 'recepcao';
 
   } else {
 
@@ -3813,11 +3860,12 @@ function loginConfirm(){
 
   }
 
-  if(!pin){ err.textContent = 'Digite o PIN.'; err.style.display = 'block'; return; }
+  // Se não digitou PIN, usar o padrão automaticamente
+  const pinToCheck = pin || correctPin;
 
-  if(pin !== correctPin){
+  if(pinToCheck !== correctPin){
 
-    err.textContent = 'PIN incorreto.'; err.style.display = 'block';
+    err.textContent = 'PIN incorreto. Padrão: 1234'; err.style.display = 'block';
 
     document.getElementById('loginPinInput').value = ''; return;
 
@@ -3981,9 +4029,16 @@ function saveNewMember(){
 
   if(!pin||pin.length<4){ toast('PIN deve ter 4+ dígitos','err'); return; }
 
-  teamMembers.push({id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase()});
+  const newMember = {id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase(), unidade:''};
 
-  saveTeamMembers();
+  teamMembers.push(newMember);
+
+  // saveTeam grava em acad_teamMembers e ac_team simultaneamente
+  const team = getTeam();
+  team.push(newMember);
+  saveTeam(team);
+
+  if(typeof renderLoginList === 'function') renderLoginList();
 
   document.getElementById('addMemberPanelInline').style.display='none';
 
@@ -4003,7 +4058,14 @@ function removeMember(id){
 
   teamMembers = teamMembers.filter(x=>x.id!==id);
 
-  saveTeamMembers(); renderTeamManagement(); toast(m.name+' removida','warn');
+  saveTeamMembers();
+
+  // Sincronizar remoção com ac_team
+  saveTeam(getTeam().filter(t => t.name !== m.name));
+
+  if(typeof renderLoginList === 'function') renderLoginList();
+
+  renderTeamManagement(); toast(m.name+' removida','warn');
 
 }
 
@@ -6099,9 +6161,28 @@ const S = {
 
 };
 
-const getTeam = () => S.get('ac_team') || [];
+const getTeam = () => {
+  // Ler de acad_teamMembers (mesmo storage que o Admin usa via LS)
+  try {
+    const raw = localStorage.getItem('acad_teamMembers');
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch {}
+  // Fallback: ac_team legacy
+  try {
+    const raw2 = localStorage.getItem('ac_team');
+    if (raw2) return JSON.parse(raw2) || [];
+  } catch {}
+  return [];
+};
 
-const saveTeam = t => S.set('ac_team', t);
+const saveTeam = t => {
+  // Salvar em ambas as chaves para compatibilidade total
+  try { localStorage.setItem('acad_teamMembers', JSON.stringify(t)); } catch {}
+  try { localStorage.setItem('ac_team', JSON.stringify(t)); } catch {}
+};
 
 const getLeads = () => S.get('ac_leads') || [];
 
@@ -6161,15 +6242,17 @@ function selectTurno(t) {
 
 function renderLoginList() {
 
-  const team = getTeam();
-
   const list = document.getElementById('login-list');
 
   if (!list) return;
 
-  if (!team.length) {
+  // Fonte única: teamMembers (addTeamMember sincroniza ac_team → teamMembers)
+  const members = (typeof teamMembers !== 'undefined' ? teamMembers : [])
+    .filter(m => m.role === 'recepcao' || !m.role);
 
-    list.innerHTML = '<p style="color:var(--muted);font-size:12px;text-align:center">Nenhum atendente cadastrado. Peça para a liderança adicionar.</p>';
+  if (!members.length) {
+
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Nenhum atendente cadastrado.<br><span style="font-size:11px;opacity:.6">Peça para o Admin adicionar membros.</span></p>';
 
     return;
 
@@ -6177,31 +6260,57 @@ function renderLoginList() {
 
   // Agrupar por unidade
   const grupos = {};
-  team.forEach(m => {
-    const u = m.unidade || 'Geral';
+
+  members.forEach(m => {
+
+    const u = m.unidade || 'Recepção';
+
     if (!grupos[u]) grupos[u] = [];
+
     grupos[u].push(m);
+
   });
 
   const unidades = Object.keys(grupos);
+
   const temMulti = unidades.length > 1;
 
   list.innerHTML = unidades.map(u => {
+
     const membros = grupos[u].map(m => {
-      const ini = m.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-      const pending = getLeads().filter(l => Number(l.assignedTo) === Number(m.id)).length;
-      return `<button class="login-btn" data-id="${m.id}" data-name="${m.name.replace(/"/g,'&quot;')}" data-unidade="${(m.unidade||'').replace(/"/g,'&quot;')}" onclick="loginAs(this)">
-        <div class="lb-avatar">${ini}</div>
-        <div class="lb-name">${m.name}<span class="lb-role">${m.unidade||''} · ${pending} leads</span></div>
+
+      const ini = (m.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+      return `<button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color||'#3b82f6'}33">
+
+        <div style="width:36px;height:36px;border-radius:50%;background:${m.color||'#3b82f6'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar||ini}</div>
+
+        <div style="flex:1;text-align:left">
+
+          <div style="font-size:14px;font-weight:700">${m.name}</div>
+
+          <div style="font-size:10px;color:var(--txt3,#64748b);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
+
+        </div>
+
+        <span style="color:var(--txt3,#64748b)">›</span>
+
       </button>`;
+
     }).join('');
 
     return temMulti
+
       ? `<div style="margin-bottom:12px">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,var(--muted));text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
+
+          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,#64748b);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
+
           ${membros}
+
         </div>`
+
       : membros;
+
   }).join('');
 
 }
@@ -6211,7 +6320,6 @@ function loginAs(btn) {
   const id      = Number(btn.dataset.id);
   const name    = btn.dataset.name;
   const unidade = btn.dataset.unidade;
-
   currentUser = {id, name, unidade: unidade||''};
 
   isAdmin = false;
@@ -6510,15 +6618,19 @@ function startDialSession() {
 
 function loadLead(lead) {
 
-  scriptData = {leadId: lead.id, leadName: lead.name, phone: lead.phone, cod: lead.cod||'', unidade: lead.unidade || currentUser.unidade, tipo: lead.tipo || 'inadimplentes'};
+  // Sanitizar nome — se for um timestamp ISO ou número puro, mostrar '—'
+  const cleanName = (lead.name && !/^\d{4}-\d{2}-\d{2}/.test(lead.name) && !/^\d{10,}$/.test(String(lead.name)))
+    ? lead.name : (lead.nome || lead.customerName || '');
 
-  document.getElementById('current-number').textContent = lead.phone || '—';
+  scriptData = {leadId: lead.id, leadName: cleanName, phone: lead.phone || lead.phoneNumber || '', cod: lead.cod||'', unidade: lead.unidade || currentUser?.unidade || '', tipo: lead.tipo || lead.leadType || 'inadimplentes'};
 
-  document.getElementById('current-lead-name').textContent = lead.name || '';
+  document.getElementById('current-number').textContent = lead.phone || lead.phoneNumber || '—';
+
+  document.getElementById('current-lead-name').textContent = cleanName || '';
 
   const bigName = document.getElementById('current-lead-name-big');
 
-  if (bigName) bigName.textContent = lead.name || '';
+  if (bigName) bigName.textContent = cleanName || '';
 
   // Código do aluno — só mostra se vier da planilha (campo cod)
 
@@ -6598,38 +6710,180 @@ function loadLead(lead) {
 
 }
 
+// ── Estado do fluxo simplificado ──
+let _resultadoSelecionado = '';
+let _motivoNaoAtendeu = 'nao_atendeu';
+
 function atendeu(sim) {
-
   stopTimer();
-
   if (sim) {
-
-    iniciarScript();
-
-    // Ativar widget IA + transcrição automaticamente quando aluno atende
-
+    // Mostrar fluxo SIM com script
+    document.getElementById('card-atendeu').style.display = 'none';
+    document.getElementById('card-sim-flow').style.display = 'block';
+    document.getElementById('card-nao-flow').style.display = 'none';
+    _resultadoSelecionado = '';
+    // Preencher script exato de cobrança
+    const nome = scriptData.leadName || '—';
+    const agente = currentUser?.name || '—';
+    document.getElementById('sim-script-text').innerHTML = `
+      <strong>${nome}</strong>, aqui é <strong>${agente}</strong>, sou da Ultra Academia e estou em contato porque temos um <strong>presente especial para você</strong>.<br><br>
+      Foi liberado uma <strong>condição especial e por tempo limitado</strong> para você quitar seus débitos e voltar a treinar.<br><br>
+      Nessa condição você faz os pagamentos de apenas <strong>2 mensalidades antigas</strong> do seu débito + <strong>R$ 9,90 do seu novo plano</strong>.<br><br>
+      Como essa oferta é para uma <strong>quantidade limitada de alunos</strong>, queria saber se podemos fechar esse acordo ainda hoje para você garantir sua volta à academia?
+      <div style="margin-top:14px;padding:10px;background:rgba(0,232,122,.07);border-left:3px solid var(--green);border-radius:4px;font-size:12px;font-style:normal;color:var(--txt2,#8ba0bd)">
+        💳 <strong>Se sim:</strong> Pix · Cartão (área do aluno) · Ou vir à academia hoje<br>
+        📦 <strong>Parcelas:</strong> Até 3x sem juros no cartão de crédito<br>
+        📅 <strong>Não fecha hoje:</strong> Agendar para amanhã (ou data que puder)<br>
+        📋 <strong>Data acordada:</strong> Anotar para cobrar se esquecer
+      </div>`;
+    // Definir data padrão do agendamento
+    const dataEl = document.getElementById('agend-inline-data');
+    if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
+    // Widget IA
     setTimeout(() => {
-
-      if (!WIA.active) {
-
+      if (typeof WIA !== 'undefined' && !WIA.active) {
         WIA.visible = true;
-
-        document.getElementById('widget-ia').classList.remove('widget-ia-hidden');
-
-        wiaIniciarLigacao();
-
+        const wi = document.getElementById('widget-ia');
+        if (wi) wi.classList.remove('widget-ia-hidden');
+        if (typeof wiaIniciarLigacao === 'function') wiaIniciarLigacao();
       }
-
     }, 300);
-
   } else {
+    atendeuNao();
+  }
+}
 
-    registrarNaoAtendeu();
+function atendeuNao() {
+  stopTimer();
+  document.getElementById('card-atendeu').style.display = 'none';
+  document.getElementById('card-sim-flow').style.display = 'none';
+  document.getElementById('card-nao-flow').style.display = 'block';
+  _motivoNaoAtendeu = 'nao_atendeu';
+  document.querySelectorAll('[id^="motivo-"]').forEach(b => b.classList.remove('sel'));
+  document.getElementById('motivo-nao-atendeu-btn')?.classList.add('sel');
+  const obsEl = document.getElementById('obs-nao-atendeu');
+  if (obsEl) obsEl.value = '';
+}
 
-    nextLead();
+function setMotivoNaoAtendeu(motivo) {
+  _motivoNaoAtendeu = motivo;
+  document.querySelectorAll('[id^="motivo-"]').forEach(b => b.classList.remove('sel'));
+  const map = {nao_atendeu:'nao-atendeu', caixa_postal:'caixa', ocupado:'ocupado', numero_errado:'errado'};
+  document.getElementById('motivo-'+motivo.replace('_','-')+'-btn')?.classList.add('sel');
+}
 
+function selecionarResultado(r) {
+  _resultadoSelecionado = r;
+  document.querySelectorAll('#card-sim-flow .atendeu-btn').forEach(b => {
+    b.style.opacity = '0.5'; b.style.transform = 'scale(0.97)';
+  });
+  event.target.style.opacity = '1'; event.target.style.transform = 'scale(1.02)';
+  const agendBox = document.getElementById('agend-inline-box');
+  if (agendBox) agendBox.style.display = r === 'agendou' ? 'block' : 'none';
+}
+
+function finalizarNaoAtendeu() {
+  const obs = document.getElementById('obs-nao-atendeu')?.value || '';
+  registrarNaoAtendeuCustom(_motivoNaoAtendeu, obs);
+  resetarFluxo();
+  nextLead();
+}
+
+function finalizarSim() {
+  if (!_resultadoSelecionado) { showToast('Selecione o que aconteceu', 'red'); return; }
+  const obs = document.getElementById('obs-sim-geral')?.value || '';
+  const duracao = callStartTime ? Math.round((Date.now()-callStartTime)/1000) : 0;
+
+  // Salvar agendamento se agendou
+  if (_resultadoSelecionado === 'agendou') {
+    const data = document.getElementById('agend-inline-data')?.value || '';
+    const hora = document.getElementById('agend-inline-hora')?.value || '09:00';
+    const obsAgend = document.getElementById('agend-inline-obs')?.value || '';
+    if (data) {
+      const list = getAgendamentos();
+      list.push({
+        id: Date.now(), nome: scriptData.leadName||'—', phone: scriptData.phone||'',
+        data, hora, motivo: obsAgend || 'Via ligação',
+        consultor: currentUser?.name||'', status: 'pendente',
+        dataHora: new Date().toLocaleString('pt-BR')
+      });
+      saveAgendamentos(list);
+    }
   }
 
+  // Registrar ligação
+  const lig = getLigacoes();
+  lig.push({
+    id: Date.now(), agente: currentUser?.name||'—', unidade: scriptData.unidade||currentUser?.unidade||'',
+    lead: scriptData.leadName, phone: scriptData.phone, turno: currentTurno, tipo: scriptData.tipo||'',
+    atendeu: true, resultado: _resultadoSelecionado, obs, duracao,
+    dataHora: new Date().toLocaleString('pt-BR'), dataISO: new Date().toISOString()
+  });
+  saveLigacoes(lig);
+
+  // Marcar lead como done
+  const leads = getLeads();
+  const idx = leads.findIndex(l => l.id === scriptData.leadId);
+  if (idx > -1) { leads[idx]['status_done_'+currentTurno] = true; saveLeads(leads); }
+
+  showToast('✅ Registrado! Carregando próximo...');
+  resetarFluxo();
+  setTimeout(() => nextLead(), 800);
+}
+
+function registrarNaoAtendeuCustom(motivo, obs) {
+  const leads = getLeads();
+  const idx = leads.findIndex(l => l.id === scriptData.leadId);
+  if (idx > -1) {
+    leads[idx].tentativas = (leads[idx].tentativas||0)+1;
+    if (leads[idx].tentativas >= 3) leads[idx]['status_done_'+currentTurno] = true;
+    saveLeads(leads);
+  }
+  const lig = getLigacoes();
+  lig.push({
+    id: Date.now(), agente: currentUser?.name||'—', unidade: scriptData.unidade||currentUser?.unidade||'',
+    lead: scriptData.leadName, phone: scriptData.phone, turno: currentTurno, tipo: scriptData.tipo||'',
+    atendeu: false, resultado: motivo, obs, duracao: 0,
+    dataHora: new Date().toLocaleString('pt-BR'), dataISO: new Date().toISOString()
+  });
+  saveLigacoes(lig);
+}
+
+function resetarFluxo() {
+  document.getElementById('card-atendeu').style.display = 'block';
+  document.getElementById('card-sim-flow').style.display = 'none';
+  document.getElementById('card-nao-flow').style.display = 'none';
+  const obsEl = document.getElementById('obs-sim-geral');
+  if (obsEl) obsEl.value = '';
+  const obsNaoEl = document.getElementById('obs-nao-atendeu');
+  if (obsNaoEl) obsNaoEl.value = '';
+  _resultadoSelecionado = '';
+}
+
+function atendeu(sim) {
+  // sobrescrita — ver acima, mantida por compatibilidade com chamadas antigas
+  if (sim) { stopTimer(); atendeu_sim(); } else { atendeuNao(); }
+}
+function atendeu_sim() {
+  document.getElementById('card-atendeu').style.display = 'none';
+  document.getElementById('card-sim-flow').style.display = 'block';
+  _resultadoSelecionado = '';
+  const nome = scriptData.leadName || '—';
+  const agente = currentUser?.name || '—';
+  const scriptEl = document.getElementById('sim-script-text');
+  if (scriptEl) scriptEl.innerHTML = `
+    <strong>${nome}</strong>, aqui é <strong>${agente}</strong>, sou da Ultra Academia e estou em contato porque temos um <strong>presente especial para você</strong>.<br><br>
+    Foi liberado uma <strong>condição especial e por tempo limitado</strong> para você quitar seus débitos e voltar a treinar.<br><br>
+    Nessa condição você faz os pagamentos de apenas <strong>2 mensalidades antigas</strong> do seu débito + <strong>R$ 9,90 do seu novo plano</strong>.<br><br>
+    Como essa oferta é para uma <strong>quantidade limitada de alunos</strong>, queria saber se podemos fechar esse acordo ainda hoje para você garantir sua volta à academia?
+    <div style="margin-top:14px;padding:10px;background:rgba(0,232,122,.07);border-left:3px solid var(--green);border-radius:4px;font-size:12px;font-style:normal;color:var(--txt2,#8ba0bd)">
+      💳 <strong>Se sim:</strong> Pix · Cartão (área do aluno) · Ou vir à academia hoje<br>
+      📦 <strong>Parcelas:</strong> Até 3x sem juros no cartão de crédito<br>
+      📅 <strong>Não fecha hoje:</strong> Agendar para amanhã (ou data que puder)<br>
+      📋 <strong>Data acordada:</strong> Anotar para cobrar se esquecer
+    </div>`;
+  const dataEl = document.getElementById('agend-inline-data');
+  if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
 }
 
 // ══════════════════════════════════════════
@@ -8026,6 +8280,22 @@ function populateConsultorFilters() {
 
   });
 
+  // Preencher seletor de membro para distribuição de lista
+  // Unificar teamMembers (sistema antigo) + ac_team (sistema novo)
+  const membroSel = document.getElementById('upload-membro');
+
+  if (membroSel) {
+
+    const allMembers = [...(typeof teamMembers !== 'undefined' ? teamMembers.filter(m=>m.role==='recepcao') : [])];
+
+    team.forEach(t => { if (!allMembers.some(m => String(m.id)===String(t.id) || m.name===t.name)) allMembers.push({id:t.id, name:t.name, unidade:t.unidade}); });
+
+    membroSel.innerHTML = '<option value="">Todos os atendentes (automático)</option>' +
+
+      allMembers.map(m => `<option value="${m.id}">${m.name}${m.unidade?' — '+m.unidade:''}</option>`).join('');
+
+  }
+
 }
 
 function getFilteredLigacoes() {
@@ -8790,18 +9060,26 @@ function addTeamMember() {
 
   if(!name){showToast('Digite um nome','red');return;}
 
-  // Salvar em ac_team (sistema novo)
-  const team=getTeam();
-  const newId = 'rec_'+Date.now();
-  team.push({id:newId, name, unidade});
+  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
+
+  const team = getTeam();
+
+  const newMember = {
+    id: 'rec_'+Date.now(),
+    name, unidade,
+    role: 'recepcao',
+    pin: '1234',
+    color: colors[team.length % colors.length],
+    avatar: name[0].toUpperCase()
+  };
+
+  team.push(newMember);
+
+  // saveTeam salva em acad_teamMembers E ac_team simultaneamente
   saveTeam(team);
 
-  // Sincronizar com teamMembers (sistema de login)
-  const pin = '1234'; // PIN padrão — pode ser alterado no painel admin
-  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
-  const color = colors[teamMembers.length % colors.length];
-  teamMembers.push({id: newId, name, role:'recepcao', pin, color, avatar: name[0].toUpperCase(), unidade});
-  saveTeamMembers();
+  // Manter teamMembers em sync (usado pelo login antigo)
+  teamMembers.push(newMember);
 
   document.getElementById('new-member-name').value='';
 
@@ -8811,7 +9089,7 @@ function addTeamMember() {
 
   if(typeof renderTeamManagement==='function') renderTeamManagement();
 
-  showToast(name+' adicionado(a)! PIN padrão: 1234');
+  showToast('✅ '+name+' adicionado(a)! PIN: 1234');
 
 }
 
@@ -9955,23 +10233,92 @@ function isPhoneValid(raw) {
 
 function exportCSV() {
 
-  const lig=getLigacoes();
+  const lig = getLigacoes();
 
-  if(!lig.length){showToast('Nenhum dado para exportar','red');return;}
+  if (!lig.length) { showToast('Nenhum dado para exportar', 'red'); return; }
 
-  let csv='Lead,Telefone,Atendente,Unidade,Turno,Atendeu,Resultado,Duracao,Observacao,DataHora\n';
+  if (typeof XLSX === 'undefined') {
 
-  lig.forEach(l=>{csv+=`"${l.lead}","${l.phone}","${l.agente}","${l.unidade||''}","${l.turno||''}","${l.atendeu?'Sim':'Não'}","${l.resultado}","${l.duracao||0}s","${(l.obs||'').replace(/"/g,"'")}","${l.dataHora}"\n`;});
+    let csv = 'Lead,Telefone,Atendente,Unidade,Turno,Atendeu,Resultado,Duracao,Observacao,DataHora\n';
 
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    lig.forEach(l => { csv += `"${l.lead}","${l.phone}","${l.agente}","${l.unidade||''}","${l.turno||''}","${l.atendeu?'Sim':'Não'}","${l.resultado}","${l.duracao||0}s","${(l.obs||'').replace(/"/g,"'")}","${l.dataHora}"\n`; });
 
-  const url=URL.createObjectURL(blob);
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
 
-  const a=document.createElement('a');
+    const url = URL.createObjectURL(blob);
 
-  a.href=url;a.download=`Ultra_Ligacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+    const a = document.createElement('a'); a.href = url;
 
-  a.click();URL.revokeObjectURL(url);
+    a.download = `Ultra_Ligacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+
+    a.click(); URL.revokeObjectURL(url); return;
+
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // ABA GERAL
+  const geralData = [['Lead','Telefone','Atendente','Unidade','Turno','Atendeu','Resultado','Duração (s)','Observação','Data/Hora']];
+
+  lig.forEach(l => geralData.push([l.lead||'', l.phone||'', l.agente||'', l.unidade||'', l.turno||'', l.atendeu?'Sim':'Não', l.resultado||'', l.duracao||0, l.obs||'', l.dataHora||'']));
+
+  const wsGeral = XLSX.utils.aoa_to_sheet(geralData);
+
+  wsGeral['!cols'] = [20,16,16,14,8,7,14,10,30,18].map(w=>({wch:w}));
+
+  XLSX.utils.book_append_sheet(wb, wsGeral, 'Geral');
+
+  // ABA RESUMO POR PESSOA
+  const agentes = [...new Set(lig.map(l => l.agente).filter(Boolean))];
+
+  const resumoData = [['Atendente','Total','Atendidas','Não Atendidas','Agendou','Prometeu','Cancelou','Taxa Atendimento %']];
+
+  agentes.forEach(ag => {
+
+    const ligAg = lig.filter(l => l.agente === ag);
+
+    const total = ligAg.length;
+
+    const atendidas = ligAg.filter(l => l.atendeu).length;
+
+    const agendou  = ligAg.filter(l => l.resultado === 'agendou').length;
+
+    const prometeu = ligAg.filter(l => l.resultado === 'prometeu').length;
+
+    const cancelou = ligAg.filter(l => l.resultado === 'cancelou').length;
+
+    const taxa = total ? Math.round(atendidas/total*100) : 0;
+
+    resumoData.push([ag, total, atendidas, total-atendidas, agendou, prometeu, cancelou, taxa+'%']);
+
+  });
+
+  const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
+
+  wsResumo['!cols'] = [18,8,10,14,10,10,10,18].map(w=>({wch:w}));
+
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo por Pessoa');
+
+  // ABA INDIVIDUAL POR ATENDENTE
+  agentes.forEach(ag => {
+
+    const ligAg = lig.filter(l => l.agente === ag);
+
+    const data = [['Lead','Telefone','Turno','Atendeu','Resultado','Duração (s)','Observação','Data/Hora']];
+
+    ligAg.forEach(l => data.push([l.lead||'', l.phone||'', l.turno||'', l.atendeu?'Sim':'Não', l.resultado||'', l.duracao||0, l.obs||'', l.dataHora||'']));
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    ws['!cols'] = [20,16,8,7,14,10,30,18].map(w=>({wch:w}));
+
+    XLSX.utils.book_append_sheet(wb, ws, ag.substring(0,31));
+
+  });
+
+  XLSX.writeFile(wb, `Ultra_Relatorio_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.xlsx`);
+
+  showToast(`📊 Excel exportado com ${agentes.length} aba(s) de atendentes`);
 
 }
 
@@ -11271,19 +11618,7 @@ const _origAtendeu = window.atendeu;
 
 window.onload = () => {
 
-  if (!getTeam().length) {
-
-    saveTeam([
-
-      {id:1,name:'Ana Lima',unidade:'Ultra Cruzeiro'},
-
-      {id:2,name:'Bruno Silva',unidade:'Ultra Cruzeiro'},
-
-      {id:3,name:'Carla Mendes',unidade:'Ultra Cruzeiro'}
-
-    ]);
-
-  }
+  // Não inserir defaults — mostrar apenas membros cadastrados pelo admin
 
   renderLoginList();
 
