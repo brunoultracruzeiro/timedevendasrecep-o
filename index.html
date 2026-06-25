@@ -6659,12 +6659,20 @@ function atendeu(sim) {
     document.getElementById('card-sim-flow').style.display = 'block';
     document.getElementById('card-nao-flow').style.display = 'none';
     _resultadoSelecionado = '';
-    // Preencher script com nome do lead
+    // Preencher script exato de cobrança
     const nome = scriptData.leadName || '—';
     const agente = currentUser?.name || '—';
-    const tipo = scriptData.tipo || 'inadimplentes';
-    const s = SCRIPTS_POR_TIPO[tipo] || SCRIPTS_POR_TIPO['default'];
-    document.getElementById('sim-script-text').innerHTML = s.s1(nome, agente);
+    document.getElementById('sim-script-text').innerHTML = `
+      <strong>${nome}</strong>, aqui é <strong>${agente}</strong>, sou da Ultra Academia e estou em contato porque temos um <strong>presente especial para você</strong>.<br><br>
+      Foi liberado uma <strong>condição especial e por tempo limitado</strong> para você quitar seus débitos e voltar a treinar.<br><br>
+      Nessa condição você faz os pagamentos de apenas <strong>2 mensalidades antigas</strong> do seu débito + <strong>R$ 9,90 do seu novo plano</strong>.<br><br>
+      Como essa oferta é para uma <strong>quantidade limitada de alunos</strong>, queria saber se podemos fechar esse acordo ainda hoje para você garantir sua volta à academia?
+      <div style="margin-top:14px;padding:10px;background:rgba(0,232,122,.07);border-left:3px solid var(--green);border-radius:4px;font-size:12px;font-style:normal;color:var(--txt2,#8ba0bd)">
+        💳 <strong>Se sim:</strong> Pix · Cartão (área do aluno) · Ou vir à academia hoje<br>
+        📦 <strong>Parcelas:</strong> Até 3x sem juros no cartão de crédito<br>
+        📅 <strong>Não fecha hoje:</strong> Agendar para amanhã (ou data que puder)<br>
+        📋 <strong>Data acordada:</strong> Anotar para cobrar se esquecer
+      </div>`;
     // Definir data padrão do agendamento
     const dataEl = document.getElementById('agend-inline-data');
     if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
@@ -6799,10 +6807,18 @@ function atendeu_sim() {
   _resultadoSelecionado = '';
   const nome = scriptData.leadName || '—';
   const agente = currentUser?.name || '—';
-  const tipo = scriptData.tipo || 'inadimplentes';
-  const s = (typeof SCRIPTS_POR_TIPO !== 'undefined' && SCRIPTS_POR_TIPO[tipo]) || null;
   const scriptEl = document.getElementById('sim-script-text');
-  if (scriptEl) scriptEl.innerHTML = s ? s.s1(nome, agente) : `<strong>${nome}</strong>, aqui é <strong>${agente}</strong> da Ultra Academia. Tenho uma novidade especial para você!`;
+  if (scriptEl) scriptEl.innerHTML = `
+    <strong>${nome}</strong>, aqui é <strong>${agente}</strong>, sou da Ultra Academia e estou em contato porque temos um <strong>presente especial para você</strong>.<br><br>
+    Foi liberado uma <strong>condição especial e por tempo limitado</strong> para você quitar seus débitos e voltar a treinar.<br><br>
+    Nessa condição você faz os pagamentos de apenas <strong>2 mensalidades antigas</strong> do seu débito + <strong>R$ 9,90 do seu novo plano</strong>.<br><br>
+    Como essa oferta é para uma <strong>quantidade limitada de alunos</strong>, queria saber se podemos fechar esse acordo ainda hoje para você garantir sua volta à academia?
+    <div style="margin-top:14px;padding:10px;background:rgba(0,232,122,.07);border-left:3px solid var(--green);border-radius:4px;font-size:12px;font-style:normal;color:var(--txt2,#8ba0bd)">
+      💳 <strong>Se sim:</strong> Pix · Cartão (área do aluno) · Ou vir à academia hoje<br>
+      📦 <strong>Parcelas:</strong> Até 3x sem juros no cartão de crédito<br>
+      📅 <strong>Não fecha hoje:</strong> Agendar para amanhã (ou data que puder)<br>
+      📋 <strong>Data acordada:</strong> Anotar para cobrar se esquecer
+    </div>`;
   const dataEl = document.getElementById('agend-inline-data');
   if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
 }
@@ -8202,13 +8218,18 @@ function populateConsultorFilters() {
   });
 
   // Preencher seletor de membro para distribuição de lista
+  // Unificar teamMembers (sistema antigo) + ac_team (sistema novo)
   const membroSel = document.getElementById('upload-membro');
 
   if (membroSel) {
 
+    const allMembers = [...(typeof teamMembers !== 'undefined' ? teamMembers.filter(m=>m.role==='recepcao') : [])];
+
+    team.forEach(t => { if (!allMembers.some(m => String(m.id)===String(t.id) || m.name===t.name)) allMembers.push({id:t.id, name:t.name, unidade:t.unidade}); });
+
     membroSel.innerHTML = '<option value="">Todos os atendentes (automático)</option>' +
 
-      team.map(m => `<option value="${m.id}">${m.name} ${m.unidade?'— '+m.unidade:''}</option>`).join('');
+      allMembers.map(m => `<option value="${m.id}">${m.name}${m.unidade?' — '+m.unidade:''}</option>`).join('');
 
   }
 
