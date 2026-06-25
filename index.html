@@ -3748,88 +3748,61 @@ function loginChooseRole(role){
   if(role === 'admin'){
 
     showLoginStep(3);
-
     document.getElementById('loginPersonName').textContent = 'Admin';
-
     document.getElementById('loginPersonRole').textContent = 'Acesso completo';
-
     document.getElementById('loginPersonAvatar').textContent = '⚙';
-
     document.getElementById('loginPersonAvatar').style.background = 'var(--yellow)';
-
     loginSelectedMember = null;
 
   } else {
 
-    // Construir lista unificada a partir de AMBAS as fontes
     const colors = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
 
-    // 1. Começar com ac_team (cadastro via Config — fonte principal)
-    const acTeam = getTeam() || [];
+    // Ler direto do storage unificado
+    const allRaw = getTeam();
 
-    // 2. Adicionar de teamMembers quem não estiver em ac_team (pelo nome)
-    const acNames = new Set(acTeam.map(t => (t.name||'').toLowerCase().trim()));
+    // Converter para formato de login (suporta ambos os formatos antigo e novo)
+    const members = allRaw.map((m, i) => ({
+      id:      String(m.id || i),
+      name:    m.name || '?',
+      role:    m.role || 'recepcao',
+      pin:     m.pin  || '1234',
+      color:   m.color || colors[i % colors.length],
+      avatar:  m.avatar || (m.name||'?')[0].toUpperCase(),
+      unidade: m.unidade || ''
+    })).filter(m => m.role === 'recepcao' || !m.role || m.role === role);
 
-    const extras = teamMembers.filter(m =>
-      m.role === 'recepcao' && !acNames.has((m.name||'').toLowerCase().trim())
-    );
-
-    // 3. Montar lista final unificada com dados completos
-    const allMembers = [
-      ...acTeam.map((t, i) => {
-        // Tentar achar entry existente no teamMembers para pegar cor/pin/avatar
-        const existing = teamMembers.find(m =>
-          m.name.toLowerCase().trim() === (t.name||'').toLowerCase().trim()
-        );
-        return {
-          id: String(t.id),
-          name: t.name,
-          role: 'recepcao',
-          pin: existing?.pin || '1234',
-          color: existing?.color || colors[i % colors.length],
-          avatar: existing?.avatar || (t.name||'?')[0].toUpperCase(),
-          unidade: t.unidade || existing?.unidade || ''
-        };
-      }),
-      ...extras.map((m, i) => ({...m, id: String(m.id)}))
-    ];
-
-    // 4. Sincronizar: garantir que todos estejam em teamMembers para loginSelectMember
-    allMembers.forEach(m => {
-      if(!teamMembers.find(x => String(x.id) === String(m.id))) {
-        teamMembers.push({...m, role:'recepcao'});
+    // Garantir que estejam em teamMembers para loginSelectMember
+    members.forEach(m => {
+      if(!teamMembers.find(x => String(x.id) === String(m.id))){
+        teamMembers.push(m);
       }
     });
-    saveTeamMembers();
+    // Também sincronizar teamMembers com qualquer membro novo
+    teamMembers.forEach(m => {
+      if(!allRaw.find(x => String(x.id) === String(m.id) || x.name === m.name)){
+        allRaw.push(m);
+      }
+    });
+    saveTeam(allRaw);
+    teamMembers = JSON.parse(localStorage.getItem('acad_teamMembers') || '[]');
 
     document.getElementById('loginStep2Title').textContent = 'Selecione seu nome — Recepção';
 
     const list = document.getElementById('loginMemberList');
 
-    if(!allMembers.length){
-
-      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:14px">Nenhum membro cadastrado.<br><span style="font-size:12px;font-family:var(--mono);opacity:.7">Peça ao Admin para cadastrar em ⚙ Config → Equipe.</span></div>';
-
+    if(!members.length){
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:14px">Nenhum membro cadastrado.<br><small style="opacity:.6">Acesse Admin → ⚙ Config → Equipe para adicionar.</small></div>';
     } else {
-
-      list.innerHTML = allMembers.map(m => `
-
+      list.innerHTML = members.map(m => `
         <button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color}33">
-
           <div style="width:38px;height:38px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
-
           <div style="flex:1;text-align:left">
-
             <div style="font-size:15px;font-weight:700">${m.name}</div>
-
             <div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
-
           </div>
-
           <span style="color:var(--txt3)">›</span>
-
         </button>`).join('');
-
     }
 
     showLoginStep(2);
@@ -4056,16 +4029,14 @@ function saveNewMember(){
 
   if(!pin||pin.length<4){ toast('PIN deve ter 4+ dígitos','err'); return; }
 
-  teamMembers.push({id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase()});
+  const newMember = {id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase(), unidade:''};
 
-  saveTeamMembers();
+  teamMembers.push(newMember);
 
-  // Sincronizar com ac_team
-  const acTeam = getTeam();
-  if (!acTeam.some(t => t.name === name)) {
-    acTeam.push({id: Date.now(), name, unidade: ''});
-    saveTeam(acTeam);
-  }
+  // saveTeam grava em acad_teamMembers e ac_team simultaneamente
+  const team = getTeam();
+  team.push(newMember);
+  saveTeam(team);
 
   if(typeof renderLoginList === 'function') renderLoginList();
 
@@ -6190,9 +6161,28 @@ const S = {
 
 };
 
-const getTeam = () => S.get('ac_team') || [];
+const getTeam = () => {
+  // Ler de acad_teamMembers (mesmo storage que o Admin usa via LS)
+  try {
+    const raw = localStorage.getItem('acad_teamMembers');
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch {}
+  // Fallback: ac_team legacy
+  try {
+    const raw2 = localStorage.getItem('ac_team');
+    if (raw2) return JSON.parse(raw2) || [];
+  } catch {}
+  return [];
+};
 
-const saveTeam = t => S.set('ac_team', t);
+const saveTeam = t => {
+  // Salvar em ambas as chaves para compatibilidade total
+  try { localStorage.setItem('acad_teamMembers', JSON.stringify(t)); } catch {}
+  try { localStorage.setItem('ac_team', JSON.stringify(t)); } catch {}
+};
 
 const getLeads = () => S.get('ac_leads') || [];
 
@@ -9070,18 +9060,26 @@ function addTeamMember() {
 
   if(!name){showToast('Digite um nome','red');return;}
 
-  // Salvar em ac_team (sistema novo)
-  const team=getTeam();
-  const newId = 'rec_'+Date.now();
-  team.push({id:newId, name, unidade});
+  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
+
+  const team = getTeam();
+
+  const newMember = {
+    id: 'rec_'+Date.now(),
+    name, unidade,
+    role: 'recepcao',
+    pin: '1234',
+    color: colors[team.length % colors.length],
+    avatar: name[0].toUpperCase()
+  };
+
+  team.push(newMember);
+
+  // saveTeam salva em acad_teamMembers E ac_team simultaneamente
   saveTeam(team);
 
-  // Sincronizar com teamMembers (sistema de login)
-  const pin = '1234'; // PIN padrão — pode ser alterado no painel admin
-  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
-  const color = colors[teamMembers.length % colors.length];
-  teamMembers.push({id: newId, name, role:'recepcao', pin, color, avatar: name[0].toUpperCase(), unidade});
-  saveTeamMembers();
+  // Manter teamMembers em sync (usado pelo login antigo)
+  teamMembers.push(newMember);
 
   document.getElementById('new-member-name').value='';
 
@@ -9091,7 +9089,7 @@ function addTeamMember() {
 
   if(typeof renderTeamManagement==='function') renderTeamManagement();
 
-  showToast(name+' adicionado(a)! PIN padrão: 1234');
+  showToast('✅ '+name+' adicionado(a)! PIN: 1234');
 
 }
 
