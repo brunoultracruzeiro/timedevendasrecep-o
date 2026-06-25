@@ -104,7 +104,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* DIALER */
 
-.dialer-wrap{flex:1;overflow-y:auto;padding:16px 20px 8px;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:780px;margin:0 auto;width:100%}
+.dialer-wrap{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:640px;margin:0 auto;width:100%}
 
 .prog-bar{width:100%;display:flex;align-items:center;gap:10px}
 
@@ -704,7 +704,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* NEW DIALER STYLES */
 
-.dial-wrap{max-width:780px;margin:0 auto;padding:24px 24px 60px}
+.dial-wrap{max-width:500px;margin:0 auto;padding:36px 20px 70px}
 
 .dial-step-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.25);border-radius:100px;font-family:var(--mono);font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 
@@ -860,7 +860,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 /* DISCAGEM */
 
-.dial-wrap{max-width:780px;margin:0 auto;padding:24px 24px 60px}
+.dial-wrap{max-width:500px;margin:0 auto;padding:36px 20px 70px}
 
 .dial-step-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:rgba(22,199,132,.1);border:1px solid rgba(22,199,132,.25);border-radius:100px;font-family:'DM Mono',monospace;font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 
@@ -1586,7 +1586,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
     <div class="login-title">Digite seu PIN</div>
 
-    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="PIN (padrão: 1234)" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
+    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="••••" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
 
     <div class="login-error" id="loginError">PIN incorreto. Tente novamente.</div>
 
@@ -1994,9 +1994,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <!-- FLUXO SIM: script + resultado + agendamento -->
       <div id="card-sim-flow" style="display:none;margin-top:12px">
         <!-- Script gerado -->
-        <div style="background:#091410;border:1px solid rgba(22,199,132,.22);border-left:3px solid var(--green);border-radius:10px;padding:20px;margin-bottom:14px">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:12px">🎙 SCRIPT — FALE ISSO</div>
-          <div id="sim-script-text" style="font-size:16px;line-height:2;color:#c8e6d0;font-style:italic"></div>
+        <div style="background:#091410;border:1px solid rgba(22,199,132,.22);border-left:3px solid var(--green);border-radius:8px;padding:16px;margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:8px">🎙 SCRIPT — FALE ISSO</div>
+          <div id="sim-script-text" style="font-size:14px;line-height:1.8;color:#9ecfb0;font-style:italic"></div>
         </div>
         <!-- Resultado -->
         <div style="margin-bottom:12px">
@@ -3707,7 +3707,13 @@ const WA_TEMPLATES = {
 
 // ══════════════════════════════════════════════════════════════════
 
-let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([])));
+let teamMembers = JSON.parse(LS.get('teamMembers', JSON.stringify([
+
+  {id:'rec1', name:'Ana Lima',  role:'recepcao', pin:'1234', color:'#3b82f6', avatar:'A'},
+
+  {id:'rec2', name:'Carla',     role:'recepcao', pin:'1234', color:'#8b5cf6', avatar:'C'},
+
+])));
 
 function saveTeamMembers(){ LS.set('teamMembers', JSON.stringify(teamMembers)); }
 
@@ -3748,61 +3754,58 @@ function loginChooseRole(role){
   if(role === 'admin'){
 
     showLoginStep(3);
+
     document.getElementById('loginPersonName').textContent = 'Admin';
+
     document.getElementById('loginPersonRole').textContent = 'Acesso completo';
+
     document.getElementById('loginPersonAvatar').textContent = '⚙';
+
     document.getElementById('loginPersonAvatar').style.background = 'var(--yellow)';
+
     loginSelectedMember = null;
 
   } else {
 
-    const colors = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
+    // Unificar teamMembers (cadastro via painel antigo) + ac_team (cadastro via Config)
+    const fromOld = teamMembers.filter(m => m.role === role);
+    const acTeam  = (getTeam()||[]);
+    const colors  = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
+    const fromNew = acTeam
+      .filter(t => !fromOld.some(o => String(o.id) === String(t.id) || o.name === t.name))
+      .map((t,i) => ({
+        id: String(t.id), name: t.name, role: 'recepcao',
+        pin: '1234', color: colors[(fromOld.length+i) % colors.length],
+        avatar: t.name[0].toUpperCase(), unidade: t.unidade||''
+      }));
+    // Garantir que os novos estejam no teamMembers para loginSelectMember funcionar
+    fromNew.forEach(m => { if(!teamMembers.find(x=>x.id===m.id)){teamMembers.push(m);} });
+    if(fromNew.length) saveTeamMembers();
 
-    // Ler direto do storage unificado
-    const allRaw = getTeam();
-
-    // Converter para formato de login (suporta ambos os formatos antigo e novo)
-    const members = allRaw.map((m, i) => ({
-      id:      String(m.id || i),
-      name:    m.name || '?',
-      role:    m.role || 'recepcao',
-      pin:     m.pin  || '1234',
-      color:   m.color || colors[i % colors.length],
-      avatar:  m.avatar || (m.name||'?')[0].toUpperCase(),
-      unidade: m.unidade || ''
-    })).filter(m => m.role === 'recepcao' || !m.role || m.role === role);
-
-    // Garantir que estejam em teamMembers para loginSelectMember
-    members.forEach(m => {
-      if(!teamMembers.find(x => String(x.id) === String(m.id))){
-        teamMembers.push(m);
-      }
-    });
-    // Também sincronizar teamMembers com qualquer membro novo
-    teamMembers.forEach(m => {
-      if(!allRaw.find(x => String(x.id) === String(m.id) || x.name === m.name)){
-        allRaw.push(m);
-      }
-    });
-    saveTeam(allRaw);
-    teamMembers = JSON.parse(localStorage.getItem('acad_teamMembers') || '[]');
+    const members = [...fromOld, ...fromNew];
 
     document.getElementById('loginStep2Title').textContent = 'Selecione seu nome — Recepção';
 
     const list = document.getElementById('loginMemberList');
 
     if(!members.length){
-      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:14px">Nenhum membro cadastrado.<br><small style="opacity:.6">Acesse Admin → ⚙ Config → Equipe para adicionar.</small></div>';
+
+      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Nenhum membro cadastrado.<br><span style="font-size:11px;font-family:var(--mono)">Peça ao Admin para cadastrar.</span></div>';
+
     } else {
+
       list.innerHTML = members.map(m => `
+
         <button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color}33">
-          <div style="width:38px;height:38px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
-          <div style="flex:1;text-align:left">
-            <div style="font-size:15px;font-weight:700">${m.name}</div>
-            <div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
-          </div>
+
+          <div style="width:36px;height:36px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
+
+          <div style="flex:1;text-align:left"><div style="font-size:14px;font-weight:700">${m.name}</div><div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div></div>
+
           <span style="color:var(--txt3)">›</span>
+
         </button>`).join('');
+
     }
 
     showLoginStep(2);
@@ -3813,20 +3816,19 @@ function loginChooseRole(role){
 
 function loginSelectMember(memberId){
 
-  // Buscar por id como string OU número para evitar mismatch
-  const m = teamMembers.find(x => String(x.id) === String(memberId));
+  const m = teamMembers.find(x => x.id === memberId);
 
-  if(!m){ console.warn('Membro não encontrado:', memberId); return; }
+  if(!m) return;
 
-  loginSelectedMember = m; loginSelectedRole = m.role || 'recepcao';
+  loginSelectedMember = m; loginSelectedRole = m.role;
 
   document.getElementById('loginPersonName').textContent = m.name;
 
-  document.getElementById('loginPersonRole').textContent = m.unidade || 'Recepção';
+  document.getElementById('loginPersonRole').textContent = 'Recepção';
 
-  document.getElementById('loginPersonAvatar').textContent = m.avatar || m.name[0];
+  document.getElementById('loginPersonAvatar').textContent = m.avatar;
 
-  document.getElementById('loginPersonAvatar').style.background = m.color || '#3b82f6';
+  document.getElementById('loginPersonAvatar').style.background = m.color;
 
   showLoginStep(3);
 
@@ -3852,7 +3854,7 @@ function loginConfirm(){
 
     correctPin = (loginSelectedMember.pin || '1234').trim();
 
-    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role || 'recepcao';
+    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role;
 
   } else {
 
@@ -3860,12 +3862,11 @@ function loginConfirm(){
 
   }
 
-  // Se não digitou PIN, usar o padrão automaticamente
-  const pinToCheck = pin || correctPin;
+  if(!pin){ err.textContent = 'Digite o PIN.'; err.style.display = 'block'; return; }
 
-  if(pinToCheck !== correctPin){
+  if(pin !== correctPin){
 
-    err.textContent = 'PIN incorreto. Padrão: 1234'; err.style.display = 'block';
+    err.textContent = 'PIN incorreto.'; err.style.display = 'block';
 
     document.getElementById('loginPinInput').value = ''; return;
 
@@ -4029,16 +4030,9 @@ function saveNewMember(){
 
   if(!pin||pin.length<4){ toast('PIN deve ter 4+ dígitos','err'); return; }
 
-  const newMember = {id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase(), unidade:''};
+  teamMembers.push({id:'rec_'+Date.now(), name, role:'recepcao', pin, color:selectedMemberColor, avatar:name[0].toUpperCase()});
 
-  teamMembers.push(newMember);
-
-  // saveTeam grava em acad_teamMembers e ac_team simultaneamente
-  const team = getTeam();
-  team.push(newMember);
-  saveTeam(team);
-
-  if(typeof renderLoginList === 'function') renderLoginList();
+  saveTeamMembers();
 
   document.getElementById('addMemberPanelInline').style.display='none';
 
@@ -4058,14 +4052,7 @@ function removeMember(id){
 
   teamMembers = teamMembers.filter(x=>x.id!==id);
 
-  saveTeamMembers();
-
-  // Sincronizar remoção com ac_team
-  saveTeam(getTeam().filter(t => t.name !== m.name));
-
-  if(typeof renderLoginList === 'function') renderLoginList();
-
-  renderTeamManagement(); toast(m.name+' removida','warn');
+  saveTeamMembers(); renderTeamManagement(); toast(m.name+' removida','warn');
 
 }
 
@@ -6161,28 +6148,9 @@ const S = {
 
 };
 
-const getTeam = () => {
-  // Ler de acad_teamMembers (mesmo storage que o Admin usa via LS)
-  try {
-    const raw = localStorage.getItem('acad_teamMembers');
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) return arr;
-    }
-  } catch {}
-  // Fallback: ac_team legacy
-  try {
-    const raw2 = localStorage.getItem('ac_team');
-    if (raw2) return JSON.parse(raw2) || [];
-  } catch {}
-  return [];
-};
+const getTeam = () => S.get('ac_team') || [];
 
-const saveTeam = t => {
-  // Salvar em ambas as chaves para compatibilidade total
-  try { localStorage.setItem('acad_teamMembers', JSON.stringify(t)); } catch {}
-  try { localStorage.setItem('ac_team', JSON.stringify(t)); } catch {}
-};
+const saveTeam = t => S.set('ac_team', t);
 
 const getLeads = () => S.get('ac_leads') || [];
 
@@ -6242,17 +6210,15 @@ function selectTurno(t) {
 
 function renderLoginList() {
 
+  const team = getTeam();
+
   const list = document.getElementById('login-list');
 
   if (!list) return;
 
-  // Fonte única: teamMembers (addTeamMember sincroniza ac_team → teamMembers)
-  const members = (typeof teamMembers !== 'undefined' ? teamMembers : [])
-    .filter(m => m.role === 'recepcao' || !m.role);
+  if (!team.length) {
 
-  if (!members.length) {
-
-    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Nenhum atendente cadastrado.<br><span style="font-size:11px;opacity:.6">Peça para o Admin adicionar membros.</span></p>';
+    list.innerHTML = '<p style="color:var(--muted);font-size:12px;text-align:center">Nenhum atendente cadastrado. Peça para a liderança adicionar.</p>';
 
     return;
 
@@ -6260,57 +6226,31 @@ function renderLoginList() {
 
   // Agrupar por unidade
   const grupos = {};
-
-  members.forEach(m => {
-
-    const u = m.unidade || 'Recepção';
-
+  team.forEach(m => {
+    const u = m.unidade || 'Geral';
     if (!grupos[u]) grupos[u] = [];
-
     grupos[u].push(m);
-
   });
 
   const unidades = Object.keys(grupos);
-
   const temMulti = unidades.length > 1;
 
   list.innerHTML = unidades.map(u => {
-
     const membros = grupos[u].map(m => {
-
-      const ini = (m.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-
-      return `<button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color||'#3b82f6'}33">
-
-        <div style="width:36px;height:36px;border-radius:50%;background:${m.color||'#3b82f6'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar||ini}</div>
-
-        <div style="flex:1;text-align:left">
-
-          <div style="font-size:14px;font-weight:700">${m.name}</div>
-
-          <div style="font-size:10px;color:var(--txt3,#64748b);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
-
-        </div>
-
-        <span style="color:var(--txt3,#64748b)">›</span>
-
+      const ini = m.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      const pending = getLeads().filter(l => Number(l.assignedTo) === Number(m.id)).length;
+      return `<button class="login-btn" data-id="${m.id}" data-name="${m.name.replace(/"/g,'&quot;')}" data-unidade="${(m.unidade||'').replace(/"/g,'&quot;')}" onclick="loginAs(this)">
+        <div class="lb-avatar">${ini}</div>
+        <div class="lb-name">${m.name}<span class="lb-role">${m.unidade||''} · ${pending} leads</span></div>
       </button>`;
-
     }).join('');
 
     return temMulti
-
       ? `<div style="margin-bottom:12px">
-
-          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,#64748b);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
-
+          <div style="font-family:var(--mono);font-size:10px;color:var(--txt3,var(--muted));text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;padding-left:4px">${u}</div>
           ${membros}
-
         </div>`
-
       : membros;
-
   }).join('');
 
 }
@@ -6320,6 +6260,7 @@ function loginAs(btn) {
   const id      = Number(btn.dataset.id);
   const name    = btn.dataset.name;
   const unidade = btn.dataset.unidade;
+
   currentUser = {id, name, unidade: unidade||''};
 
   isAdmin = false;
@@ -6618,19 +6559,15 @@ function startDialSession() {
 
 function loadLead(lead) {
 
-  // Sanitizar nome — se for um timestamp ISO ou número puro, mostrar '—'
-  const cleanName = (lead.name && !/^\d{4}-\d{2}-\d{2}/.test(lead.name) && !/^\d{10,}$/.test(String(lead.name)))
-    ? lead.name : (lead.nome || lead.customerName || '');
+  scriptData = {leadId: lead.id, leadName: lead.name, phone: lead.phone, cod: lead.cod||'', unidade: lead.unidade || currentUser.unidade, tipo: lead.tipo || 'inadimplentes'};
 
-  scriptData = {leadId: lead.id, leadName: cleanName, phone: lead.phone || lead.phoneNumber || '', cod: lead.cod||'', unidade: lead.unidade || currentUser?.unidade || '', tipo: lead.tipo || lead.leadType || 'inadimplentes'};
+  document.getElementById('current-number').textContent = lead.phone || '—';
 
-  document.getElementById('current-number').textContent = lead.phone || lead.phoneNumber || '—';
-
-  document.getElementById('current-lead-name').textContent = cleanName || '';
+  document.getElementById('current-lead-name').textContent = lead.name || '';
 
   const bigName = document.getElementById('current-lead-name-big');
 
-  if (bigName) bigName.textContent = cleanName || '';
+  if (bigName) bigName.textContent = lead.name || '';
 
   // Código do aluno — só mostra se vier da planilha (campo cod)
 
@@ -9060,26 +8997,18 @@ function addTeamMember() {
 
   if(!name){showToast('Digite um nome','red');return;}
 
-  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
-
-  const team = getTeam();
-
-  const newMember = {
-    id: 'rec_'+Date.now(),
-    name, unidade,
-    role: 'recepcao',
-    pin: '1234',
-    color: colors[team.length % colors.length],
-    avatar: name[0].toUpperCase()
-  };
-
-  team.push(newMember);
-
-  // saveTeam salva em acad_teamMembers E ac_team simultaneamente
+  // Salvar em ac_team (sistema novo)
+  const team=getTeam();
+  const newId = 'rec_'+Date.now();
+  team.push({id:newId, name, unidade});
   saveTeam(team);
 
-  // Manter teamMembers em sync (usado pelo login antigo)
-  teamMembers.push(newMember);
+  // Sincronizar com teamMembers (sistema de login)
+  const pin = '1234'; // PIN padrão — pode ser alterado no painel admin
+  const colors=['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
+  const color = colors[teamMembers.length % colors.length];
+  teamMembers.push({id: newId, name, role:'recepcao', pin, color, avatar: name[0].toUpperCase(), unidade});
+  saveTeamMembers();
 
   document.getElementById('new-member-name').value='';
 
@@ -9089,7 +9018,7 @@ function addTeamMember() {
 
   if(typeof renderTeamManagement==='function') renderTeamManagement();
 
-  showToast('✅ '+name+' adicionado(a)! PIN: 1234');
+  showToast(name+' adicionado(a)! PIN padrão: 1234');
 
 }
 
@@ -11618,7 +11547,19 @@ const _origAtendeu = window.atendeu;
 
 window.onload = () => {
 
-  // Não inserir defaults — mostrar apenas membros cadastrados pelo admin
+  if (!getTeam().length) {
+
+    saveTeam([
+
+      {id:1,name:'Ana Lima',unidade:'Ultra Cruzeiro'},
+
+      {id:2,name:'Bruno Silva',unidade:'Ultra Cruzeiro'},
+
+      {id:3,name:'Carla Mendes',unidade:'Ultra Cruzeiro'}
+
+    ]);
+
+  }
 
   renderLoginList();
 
