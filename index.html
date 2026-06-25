@@ -1586,7 +1586,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
     <div class="login-title">Digite seu PIN</div>
 
-    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="••••" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
+    <input type="password" class="login-pin-input" id="loginPinInput" maxlength="6" placeholder="PIN (padrão: 1234)" inputmode="numeric" onkeydown="if(event.key==='Enter')loginConfirm()">
 
     <div class="login-error" id="loginError">PIN incorreto. Tente novamente.</div>
 
@@ -3761,42 +3761,70 @@ function loginChooseRole(role){
 
   } else {
 
-    // Unificar teamMembers (cadastro via painel antigo) + ac_team (cadastro via Config)
-    const fromOld = teamMembers.filter(m => m.role === role);
-    const acTeam  = (getTeam()||[]);
-    const colors  = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
-    // Deduplicar por nome (case-insensitive) para evitar duplicatas
-    const namesInOld = new Set(fromOld.map(m => m.name.toLowerCase().trim()));
-    const fromNew = acTeam
-      .filter(t => !namesInOld.has((t.name||'').toLowerCase().trim()))
-      .map((t,i) => ({
-        id: String(t.id), name: t.name, role: 'recepcao',
-        pin: '1234', color: colors[(fromOld.length+i) % colors.length],
-        avatar: (t.name||'?')[0].toUpperCase(), unidade: t.unidade||''
-      }));
-    // Garantir que os novos estejam no teamMembers para loginSelectMember funcionar
-    fromNew.forEach(m => { if(!teamMembers.find(x=>x.id===m.id)){teamMembers.push(m);} });
-    if(fromNew.length) saveTeamMembers();
+    // Construir lista unificada a partir de AMBAS as fontes
+    const colors = ['#3b82f6','#8b5cf6','#00e87a','#f59e0b','#ec4899','#06b6d4','#f97316','#ef4444'];
 
-    const members = [...fromOld, ...fromNew];
+    // 1. Começar com ac_team (cadastro via Config — fonte principal)
+    const acTeam = getTeam() || [];
+
+    // 2. Adicionar de teamMembers quem não estiver em ac_team (pelo nome)
+    const acNames = new Set(acTeam.map(t => (t.name||'').toLowerCase().trim()));
+
+    const extras = teamMembers.filter(m =>
+      m.role === 'recepcao' && !acNames.has((m.name||'').toLowerCase().trim())
+    );
+
+    // 3. Montar lista final unificada com dados completos
+    const allMembers = [
+      ...acTeam.map((t, i) => {
+        // Tentar achar entry existente no teamMembers para pegar cor/pin/avatar
+        const existing = teamMembers.find(m =>
+          m.name.toLowerCase().trim() === (t.name||'').toLowerCase().trim()
+        );
+        return {
+          id: String(t.id),
+          name: t.name,
+          role: 'recepcao',
+          pin: existing?.pin || '1234',
+          color: existing?.color || colors[i % colors.length],
+          avatar: existing?.avatar || (t.name||'?')[0].toUpperCase(),
+          unidade: t.unidade || existing?.unidade || ''
+        };
+      }),
+      ...extras.map((m, i) => ({...m, id: String(m.id)}))
+    ];
+
+    // 4. Sincronizar: garantir que todos estejam em teamMembers para loginSelectMember
+    allMembers.forEach(m => {
+      if(!teamMembers.find(x => String(x.id) === String(m.id))) {
+        teamMembers.push({...m, role:'recepcao'});
+      }
+    });
+    saveTeamMembers();
 
     document.getElementById('loginStep2Title').textContent = 'Selecione seu nome — Recepção';
 
     const list = document.getElementById('loginMemberList');
 
-    if(!members.length){
+    if(!allMembers.length){
 
-      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Nenhum membro cadastrado.<br><span style="font-size:11px;font-family:var(--mono)">Peça ao Admin para cadastrar.</span></div>';
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:14px">Nenhum membro cadastrado.<br><span style="font-size:12px;font-family:var(--mono);opacity:.7">Peça ao Admin para cadastrar em ⚙ Config → Equipe.</span></div>';
 
     } else {
 
-      list.innerHTML = members.map(m => `
+      list.innerHTML = allMembers.map(m => `
 
         <button class="login-profile-btn" onclick="loginSelectMember('${m.id}')" style="border-color:${m.color}33">
 
-          <div style="width:36px;height:36px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
+          <div style="width:38px;height:38px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000;flex-shrink:0">${m.avatar}</div>
 
-          <div style="flex:1;text-align:left"><div style="font-size:14px;font-weight:700">${m.name}</div><div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div></div>
+          <div style="flex:1;text-align:left">
+
+            <div style="font-size:15px;font-weight:700">${m.name}</div>
+
+            <div style="font-size:10px;color:var(--txt3);font-family:var(--mono)">${m.unidade||'RECEPÇÃO'}</div>
+
+          </div>
 
           <span style="color:var(--txt3)">›</span>
 
@@ -3812,19 +3840,20 @@ function loginChooseRole(role){
 
 function loginSelectMember(memberId){
 
-  const m = teamMembers.find(x => x.id === memberId);
+  // Buscar por id como string OU número para evitar mismatch
+  const m = teamMembers.find(x => String(x.id) === String(memberId));
 
-  if(!m) return;
+  if(!m){ console.warn('Membro não encontrado:', memberId); return; }
 
-  loginSelectedMember = m; loginSelectedRole = m.role;
+  loginSelectedMember = m; loginSelectedRole = m.role || 'recepcao';
 
   document.getElementById('loginPersonName').textContent = m.name;
 
-  document.getElementById('loginPersonRole').textContent = 'Recepção';
+  document.getElementById('loginPersonRole').textContent = m.unidade || 'Recepção';
 
-  document.getElementById('loginPersonAvatar').textContent = m.avatar;
+  document.getElementById('loginPersonAvatar').textContent = m.avatar || m.name[0];
 
-  document.getElementById('loginPersonAvatar').style.background = m.color;
+  document.getElementById('loginPersonAvatar').style.background = m.color || '#3b82f6';
 
   showLoginStep(3);
 
@@ -3850,7 +3879,7 @@ function loginConfirm(){
 
     correctPin = (loginSelectedMember.pin || '1234').trim();
 
-    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role;
+    profileName = loginSelectedMember.name; profileRole = loginSelectedMember.role || 'recepcao';
 
   } else {
 
@@ -3858,11 +3887,12 @@ function loginConfirm(){
 
   }
 
-  if(!pin){ err.textContent = 'Digite o PIN.'; err.style.display = 'block'; return; }
+  // Se não digitou PIN, usar o padrão automaticamente
+  const pinToCheck = pin || correctPin;
 
-  if(pin !== correctPin){
+  if(pinToCheck !== correctPin){
 
-    err.textContent = 'PIN incorreto.'; err.style.display = 'block';
+    err.textContent = 'PIN incorreto. Padrão: 1234'; err.style.display = 'block';
 
     document.getElementById('loginPinInput').value = ''; return;
 
@@ -6295,7 +6325,12 @@ function renderLoginList() {
 
 }
 
+function loginAs(btn) {
 
+  const id      = Number(btn.dataset.id);
+  const name    = btn.dataset.name;
+  const unidade = btn.dataset.unidade;
+  currentUser = {id, name, unidade: unidade||''};
 
   isAdmin = false;
 
