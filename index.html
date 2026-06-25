@@ -1980,22 +1980,69 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
       </div>
 
-      <div class="atendeu-card" style="margin-top:20px">
-
-        <div class="atendeu-q">ATENDEU?</div>
-
-        <div class="atendeu-opts">
-
-          <button class="atendeu-btn sim" onclick="atendeu(true)">✅ SIM</button>
-
-          <button class="atendeu-btn nao" onclick="atendeu(false)">❌ NÃO</button>
-
+      <!-- ATENDEU + FLUXO SIMPLIFICADO -->
+      <div id="card-atendeu" style="margin-top:20px">
+        <div class="atendeu-card">
+          <div class="atendeu-q">ATENDEU?</div>
+          <div class="atendeu-opts">
+            <button class="atendeu-btn sim" onclick="atendeu(true)">✅ SIM</button>
+            <button class="atendeu-btn nao" onclick="atendeuNao()">❌ NÃO</button>
+          </div>
         </div>
-
       </div>
 
-    </div>
+      <!-- FLUXO SIM: script + resultado + agendamento -->
+      <div id="card-sim-flow" style="display:none;margin-top:12px">
+        <!-- Script gerado -->
+        <div style="background:#091410;border:1px solid rgba(22,199,132,.22);border-left:3px solid var(--green);border-radius:8px;padding:16px;margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:8px">🎙 SCRIPT — FALE ISSO</div>
+          <div id="sim-script-text" style="font-size:14px;line-height:1.8;color:#9ecfb0;font-style:italic"></div>
+        </div>
+        <!-- Resultado -->
+        <div style="margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">O que aconteceu?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="atendeu-btn sim" style="font-size:13px;padding:12px" onclick="selecionarResultado('agendou')">📅 Agendou</button>
+            <button class="atendeu-btn nao" style="font-size:13px;padding:12px;color:var(--amber);border-color:var(--amber)" onclick="selecionarResultado('nao_agendou')">🔄 Não agendou</button>
+            <button class="atendeu-btn" style="font-size:13px;padding:12px;color:var(--blue);border-color:var(--blue)" onclick="selecionarResultado('prometeu')">⏳ Prometeu</button>
+            <button class="atendeu-btn nao" style="font-size:13px;padding:12px" onclick="selecionarResultado('cancelou')">🚫 Cancelou</button>
+          </div>
+        </div>
+        <!-- Agendamento (aparece se agendou) -->
+        <div id="agend-inline-box" style="display:none;background:rgba(22,199,132,.07);border:1px solid rgba(22,199,132,.25);border-radius:9px;padding:14px;margin-bottom:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📅 Registrar Agendamento</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:120px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Data</div>
+              <input type="date" id="agend-inline-data" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none">
+            </div>
+            <div style="flex:1;min-width:100px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Horário</div>
+              <input type="time" id="agend-inline-hora" value="09:00" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none">
+            </div>
+          </div>
+          <input type="text" id="agend-inline-obs" placeholder="Observação do agendamento..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px">
+        </div>
+        <!-- Obs geral -->
+        <textarea id="obs-sim-geral" placeholder="Observação da ligação..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--text);font-size:13px;outline:none;resize:vertical;min-height:60px;margin-bottom:10px"></textarea>
+        <button class="btn btn-primary" style="width:100%" onclick="finalizarSim()">✅ Finalizar e Próximo →</button>
+      </div>
 
+      <!-- FLUXO NÃO: obs + próximo -->
+      <div id="card-nao-flow" style="display:none;margin-top:12px">
+        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:9px;padding:14px;margin-bottom:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📵 Não atendeu</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+            <button class="option-btn" id="motivo-nao-atendeu-btn" onclick="setMotivoNaoAtendeu('nao_atendeu')">📵 Não atendeu</button>
+            <button class="option-btn" id="motivo-caixa-btn" onclick="setMotivoNaoAtendeu('caixa_postal')">📬 Caixa postal</button>
+            <button class="option-btn" id="motivo-ocupado-btn" onclick="setMotivoNaoAtendeu('ocupado')">⏳ Ocupado</button>
+            <button class="option-btn" id="motivo-errado-btn" onclick="setMotivoNaoAtendeu('numero_errado')">❌ Número errado</button>
+          </div>
+          <textarea id="obs-nao-atendeu" placeholder="Observação (opcional)..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;resize:vertical;min-height:52px;margin-bottom:8px"></textarea>
+          <button class="btn btn-primary" style="width:100%;background:var(--red)" onclick="finalizarNaoAtendeu()">→ Próximo número</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TELA SCRIPT -->
@@ -2524,7 +2571,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
     <div class="admin-actions">
 
-      <button class="btn-gestor" onclick="exportCSV()">⬇️ Exportar CSV</button>
+      <button class="btn-gestor" onclick="exportCSV()">📊 Exportar Excel por Pessoa</button>
 
       <button class="btn-gestor danger" onclick="clearAllData()">🗑 Limpar</button>
 
@@ -2808,19 +2855,21 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
         </div>
 
+        <div>
+
+          <div class="filter-label" style="margin-bottom:5px">Distribuir para</div>
+
+          <select class="filter-select" id="upload-membro" style="width:100%">
+
+            <option value="">Todos os atendentes (automático)</option>
+
+          </select>
+
+        </div>
+
       </div>
 
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
-
-        ondragover="event.preventDefault();this.classList.add('drag')"
-
-        ondragleave="this.classList.remove('drag')"
-
-        ondrop="handleDrop(event)">
-
-        <div class="upload-icon">📂</div>
-
-        <div class="upload-hint">Arraste o arquivo aqui ou <strong>clique para selecionar</strong><br><span style="font-size:11px;display:block;margin-top:3px;color:var(--muted)">Suporta .csv · .xls · .xlsx · .txt</span></div>
 
       </div>
 
@@ -6598,38 +6647,164 @@ function loadLead(lead) {
 
 }
 
+// ── Estado do fluxo simplificado ──
+let _resultadoSelecionado = '';
+let _motivoNaoAtendeu = 'nao_atendeu';
+
 function atendeu(sim) {
-
   stopTimer();
-
   if (sim) {
-
-    iniciarScript();
-
-    // Ativar widget IA + transcrição automaticamente quando aluno atende
-
+    // Mostrar fluxo SIM com script
+    document.getElementById('card-atendeu').style.display = 'none';
+    document.getElementById('card-sim-flow').style.display = 'block';
+    document.getElementById('card-nao-flow').style.display = 'none';
+    _resultadoSelecionado = '';
+    // Preencher script com nome do lead
+    const nome = scriptData.leadName || '—';
+    const agente = currentUser?.name || '—';
+    const tipo = scriptData.tipo || 'inadimplentes';
+    const s = SCRIPTS_POR_TIPO[tipo] || SCRIPTS_POR_TIPO['default'];
+    document.getElementById('sim-script-text').innerHTML = s.s1(nome, agente);
+    // Definir data padrão do agendamento
+    const dataEl = document.getElementById('agend-inline-data');
+    if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
+    // Widget IA
     setTimeout(() => {
-
-      if (!WIA.active) {
-
+      if (typeof WIA !== 'undefined' && !WIA.active) {
         WIA.visible = true;
-
-        document.getElementById('widget-ia').classList.remove('widget-ia-hidden');
-
-        wiaIniciarLigacao();
-
+        const wi = document.getElementById('widget-ia');
+        if (wi) wi.classList.remove('widget-ia-hidden');
+        if (typeof wiaIniciarLigacao === 'function') wiaIniciarLigacao();
       }
-
     }, 300);
-
   } else {
+    atendeuNao();
+  }
+}
 
-    registrarNaoAtendeu();
+function atendeuNao() {
+  stopTimer();
+  document.getElementById('card-atendeu').style.display = 'none';
+  document.getElementById('card-sim-flow').style.display = 'none';
+  document.getElementById('card-nao-flow').style.display = 'block';
+  _motivoNaoAtendeu = 'nao_atendeu';
+  document.querySelectorAll('[id^="motivo-"]').forEach(b => b.classList.remove('sel'));
+  document.getElementById('motivo-nao-atendeu-btn')?.classList.add('sel');
+  const obsEl = document.getElementById('obs-nao-atendeu');
+  if (obsEl) obsEl.value = '';
+}
 
-    nextLead();
+function setMotivoNaoAtendeu(motivo) {
+  _motivoNaoAtendeu = motivo;
+  document.querySelectorAll('[id^="motivo-"]').forEach(b => b.classList.remove('sel'));
+  const map = {nao_atendeu:'nao-atendeu', caixa_postal:'caixa', ocupado:'ocupado', numero_errado:'errado'};
+  document.getElementById('motivo-'+motivo.replace('_','-')+'-btn')?.classList.add('sel');
+}
 
+function selecionarResultado(r) {
+  _resultadoSelecionado = r;
+  document.querySelectorAll('#card-sim-flow .atendeu-btn').forEach(b => {
+    b.style.opacity = '0.5'; b.style.transform = 'scale(0.97)';
+  });
+  event.target.style.opacity = '1'; event.target.style.transform = 'scale(1.02)';
+  const agendBox = document.getElementById('agend-inline-box');
+  if (agendBox) agendBox.style.display = r === 'agendou' ? 'block' : 'none';
+}
+
+function finalizarNaoAtendeu() {
+  const obs = document.getElementById('obs-nao-atendeu')?.value || '';
+  registrarNaoAtendeuCustom(_motivoNaoAtendeu, obs);
+  resetarFluxo();
+  nextLead();
+}
+
+function finalizarSim() {
+  if (!_resultadoSelecionado) { showToast('Selecione o que aconteceu', 'red'); return; }
+  const obs = document.getElementById('obs-sim-geral')?.value || '';
+  const duracao = callStartTime ? Math.round((Date.now()-callStartTime)/1000) : 0;
+
+  // Salvar agendamento se agendou
+  if (_resultadoSelecionado === 'agendou') {
+    const data = document.getElementById('agend-inline-data')?.value || '';
+    const hora = document.getElementById('agend-inline-hora')?.value || '09:00';
+    const obsAgend = document.getElementById('agend-inline-obs')?.value || '';
+    if (data) {
+      const list = getAgendamentos();
+      list.push({
+        id: Date.now(), nome: scriptData.leadName||'—', phone: scriptData.phone||'',
+        data, hora, motivo: obsAgend || 'Via ligação',
+        consultor: currentUser?.name||'', status: 'pendente',
+        dataHora: new Date().toLocaleString('pt-BR')
+      });
+      saveAgendamentos(list);
+    }
   }
 
+  // Registrar ligação
+  const lig = getLigacoes();
+  lig.push({
+    id: Date.now(), agente: currentUser?.name||'—', unidade: scriptData.unidade||currentUser?.unidade||'',
+    lead: scriptData.leadName, phone: scriptData.phone, turno: currentTurno, tipo: scriptData.tipo||'',
+    atendeu: true, resultado: _resultadoSelecionado, obs, duracao,
+    dataHora: new Date().toLocaleString('pt-BR'), dataISO: new Date().toISOString()
+  });
+  saveLigacoes(lig);
+
+  // Marcar lead como done
+  const leads = getLeads();
+  const idx = leads.findIndex(l => l.id === scriptData.leadId);
+  if (idx > -1) { leads[idx]['status_done_'+currentTurno] = true; saveLeads(leads); }
+
+  showToast('✅ Registrado! Carregando próximo...');
+  resetarFluxo();
+  setTimeout(() => nextLead(), 800);
+}
+
+function registrarNaoAtendeuCustom(motivo, obs) {
+  const leads = getLeads();
+  const idx = leads.findIndex(l => l.id === scriptData.leadId);
+  if (idx > -1) {
+    leads[idx].tentativas = (leads[idx].tentativas||0)+1;
+    if (leads[idx].tentativas >= 3) leads[idx]['status_done_'+currentTurno] = true;
+    saveLeads(leads);
+  }
+  const lig = getLigacoes();
+  lig.push({
+    id: Date.now(), agente: currentUser?.name||'—', unidade: scriptData.unidade||currentUser?.unidade||'',
+    lead: scriptData.leadName, phone: scriptData.phone, turno: currentTurno, tipo: scriptData.tipo||'',
+    atendeu: false, resultado: motivo, obs, duracao: 0,
+    dataHora: new Date().toLocaleString('pt-BR'), dataISO: new Date().toISOString()
+  });
+  saveLigacoes(lig);
+}
+
+function resetarFluxo() {
+  document.getElementById('card-atendeu').style.display = 'block';
+  document.getElementById('card-sim-flow').style.display = 'none';
+  document.getElementById('card-nao-flow').style.display = 'none';
+  const obsEl = document.getElementById('obs-sim-geral');
+  if (obsEl) obsEl.value = '';
+  const obsNaoEl = document.getElementById('obs-nao-atendeu');
+  if (obsNaoEl) obsNaoEl.value = '';
+  _resultadoSelecionado = '';
+}
+
+function atendeu(sim) {
+  // sobrescrita — ver acima, mantida por compatibilidade com chamadas antigas
+  if (sim) { stopTimer(); atendeu_sim(); } else { atendeuNao(); }
+}
+function atendeu_sim() {
+  document.getElementById('card-atendeu').style.display = 'none';
+  document.getElementById('card-sim-flow').style.display = 'block';
+  _resultadoSelecionado = '';
+  const nome = scriptData.leadName || '—';
+  const agente = currentUser?.name || '—';
+  const tipo = scriptData.tipo || 'inadimplentes';
+  const s = (typeof SCRIPTS_POR_TIPO !== 'undefined' && SCRIPTS_POR_TIPO[tipo]) || null;
+  const scriptEl = document.getElementById('sim-script-text');
+  if (scriptEl) scriptEl.innerHTML = s ? s.s1(nome, agente) : `<strong>${nome}</strong>, aqui é <strong>${agente}</strong> da Ultra Academia. Tenho uma novidade especial para você!`;
+  const dataEl = document.getElementById('agend-inline-data');
+  if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
 }
 
 // ══════════════════════════════════════════
@@ -8025,6 +8200,17 @@ function populateConsultorFilters() {
     else if(el) el.innerHTML='<option value="">Selecionar consultor...</option>'+team.map(m=>`<option value="${m.name}">${m.name}</option>`).join('');
 
   });
+
+  // Preencher seletor de membro para distribuição de lista
+  const membroSel = document.getElementById('upload-membro');
+
+  if (membroSel) {
+
+    membroSel.innerHTML = '<option value="">Todos os atendentes (automático)</option>' +
+
+      team.map(m => `<option value="${m.id}">${m.name} ${m.unidade?'— '+m.unidade:''}</option>`).join('');
+
+  }
 
 }
 
@@ -9955,23 +10141,92 @@ function isPhoneValid(raw) {
 
 function exportCSV() {
 
-  const lig=getLigacoes();
+  const lig = getLigacoes();
 
-  if(!lig.length){showToast('Nenhum dado para exportar','red');return;}
+  if (!lig.length) { showToast('Nenhum dado para exportar', 'red'); return; }
 
-  let csv='Lead,Telefone,Atendente,Unidade,Turno,Atendeu,Resultado,Duracao,Observacao,DataHora\n';
+  if (typeof XLSX === 'undefined') {
 
-  lig.forEach(l=>{csv+=`"${l.lead}","${l.phone}","${l.agente}","${l.unidade||''}","${l.turno||''}","${l.atendeu?'Sim':'Não'}","${l.resultado}","${l.duracao||0}s","${(l.obs||'').replace(/"/g,"'")}","${l.dataHora}"\n`;});
+    let csv = 'Lead,Telefone,Atendente,Unidade,Turno,Atendeu,Resultado,Duracao,Observacao,DataHora\n';
 
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    lig.forEach(l => { csv += `"${l.lead}","${l.phone}","${l.agente}","${l.unidade||''}","${l.turno||''}","${l.atendeu?'Sim':'Não'}","${l.resultado}","${l.duracao||0}s","${(l.obs||'').replace(/"/g,"'")}","${l.dataHora}"\n`; });
 
-  const url=URL.createObjectURL(blob);
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
 
-  const a=document.createElement('a');
+    const url = URL.createObjectURL(blob);
 
-  a.href=url;a.download=`Ultra_Ligacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+    const a = document.createElement('a'); a.href = url;
 
-  a.click();URL.revokeObjectURL(url);
+    a.download = `Ultra_Ligacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+
+    a.click(); URL.revokeObjectURL(url); return;
+
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // ABA GERAL
+  const geralData = [['Lead','Telefone','Atendente','Unidade','Turno','Atendeu','Resultado','Duração (s)','Observação','Data/Hora']];
+
+  lig.forEach(l => geralData.push([l.lead||'', l.phone||'', l.agente||'', l.unidade||'', l.turno||'', l.atendeu?'Sim':'Não', l.resultado||'', l.duracao||0, l.obs||'', l.dataHora||'']));
+
+  const wsGeral = XLSX.utils.aoa_to_sheet(geralData);
+
+  wsGeral['!cols'] = [20,16,16,14,8,7,14,10,30,18].map(w=>({wch:w}));
+
+  XLSX.utils.book_append_sheet(wb, wsGeral, 'Geral');
+
+  // ABA RESUMO POR PESSOA
+  const agentes = [...new Set(lig.map(l => l.agente).filter(Boolean))];
+
+  const resumoData = [['Atendente','Total','Atendidas','Não Atendidas','Agendou','Prometeu','Cancelou','Taxa Atendimento %']];
+
+  agentes.forEach(ag => {
+
+    const ligAg = lig.filter(l => l.agente === ag);
+
+    const total = ligAg.length;
+
+    const atendidas = ligAg.filter(l => l.atendeu).length;
+
+    const agendou  = ligAg.filter(l => l.resultado === 'agendou').length;
+
+    const prometeu = ligAg.filter(l => l.resultado === 'prometeu').length;
+
+    const cancelou = ligAg.filter(l => l.resultado === 'cancelou').length;
+
+    const taxa = total ? Math.round(atendidas/total*100) : 0;
+
+    resumoData.push([ag, total, atendidas, total-atendidas, agendou, prometeu, cancelou, taxa+'%']);
+
+  });
+
+  const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
+
+  wsResumo['!cols'] = [18,8,10,14,10,10,10,18].map(w=>({wch:w}));
+
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo por Pessoa');
+
+  // ABA INDIVIDUAL POR ATENDENTE
+  agentes.forEach(ag => {
+
+    const ligAg = lig.filter(l => l.agente === ag);
+
+    const data = [['Lead','Telefone','Turno','Atendeu','Resultado','Duração (s)','Observação','Data/Hora']];
+
+    ligAg.forEach(l => data.push([l.lead||'', l.phone||'', l.turno||'', l.atendeu?'Sim':'Não', l.resultado||'', l.duracao||0, l.obs||'', l.dataHora||'']));
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    ws['!cols'] = [20,16,8,7,14,10,30,18].map(w=>({wch:w}));
+
+    XLSX.utils.book_append_sheet(wb, ws, ag.substring(0,31));
+
+  });
+
+  XLSX.writeFile(wb, `Ultra_Relatorio_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.xlsx`);
+
+  showToast(`📊 Excel exportado com ${agentes.length} aba(s) de atendentes`);
 
 }
 
